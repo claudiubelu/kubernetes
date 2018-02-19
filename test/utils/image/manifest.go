@@ -16,10 +16,12 @@ limitations under the License.
 
 package image
 
+/*
 import (
 	"fmt"
-	"runtime"
+//	"runtime"
 )
+*/
 
 const (
 	e2eRegistry     = "gcr.io/kubernetes-e2e-test-images"
@@ -100,16 +102,18 @@ var (
 )
 
 func GetE2EImage(image ImageConfig) string {
-	return GetE2EImageWithArch(image, runtime.GOARCH)
+//	return GetE2EImageWithArch(image, runtime.GOARCH)
+        return "atuvenie/windows_k8s_e2e:0.1"
 }
 
 func GetE2EImageWithArch(image ImageConfig, arch string) string {
-	if image.hasArch {
+/*	if image.hasArch {
 		return fmt.Sprintf("%s/%s-%s:%s", image.registry, image.name, arch, image.version)
 	} else {
 		return fmt.Sprintf("%s/%s:%s", image.registry, image.name, image.version)
 
-	}
+	}*/
+        return "atuvenie/windows_k8s_e2e:0.1"
 }
 
 // GetPauseImageName returns the pause image name with proper version
