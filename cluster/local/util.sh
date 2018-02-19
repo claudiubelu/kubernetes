@@ -20,13 +20,14 @@ function prepare-e2e() {
 
 # Must ensure that the following ENV vars are set
 function detect-master {
-  export KUBE_MASTER_IP="127.0.0.1"
-  export KUBE_MASTER="localhost"
+#  export KUBE_MASTER_IP="127.0.0.1"
+#  export KUBE_MASTER="localhost"
+  echo " #### Jumping over this part"
 }
 
 detect-master() {
-  KUBE_MASTER=localhost
-  KUBE_MASTER_IP=127.0.0.1
-  KUBE_MASTER_URL="http://${KUBE_MASTER_IP}:8080"
+#  KUBE_MASTER=localhost
+#  KUBE_MASTER_IP=127.0.0.1
+#  KUBE_MASTER_URL="http://${KUBE_MASTER_IP}:8080"
   echo "Using master: $KUBE_MASTER (external IP: $KUBE_MASTER_IP)"
 }
