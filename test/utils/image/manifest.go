@@ -16,20 +16,22 @@ limitations under the License.
 
 package image
 
-/*
 import (
 	"fmt"
-//	"runtime"
-)
-*/
+	"io/ioutil"
+	"os"
+	"runtime"
 
-const (
-	e2eRegistry     = "gcr.io/kubernetes-e2e-test-images"
-	gcRegistry      = "k8s.gcr.io"
-	PrivateRegistry = "gcr.io/k8s-authenticated-test"
-	sampleRegistry  = "gcr.io/google-samples"
+	yaml "gopkg.in/yaml.v2"
 )
 
+// some comment
+type Registry struct {
+	E2eRegistry     string `yaml:"e2eRegistry"`
+	GcRegistry      string `yaml:"gcRegistry"`
+	PrivateRegistry string `yaml:"privateRegistry"`
+	SampleRegistry  string `yaml:"sampleRegistry"`
+}
 type ImageConfig struct {
 	registry string
 	name     string
@@ -49,7 +51,30 @@ func (i *ImageConfig) SetVersion(version string) {
 	i.version = version
 }
 
+func initReg() Registry {
+
+	fileContent, err := ioutil.ReadFile(os.Getenv("KUBE_TEST_REPO_LIST"))
+	if err != nil {
+		fmt.Print("Error reading file contents")
+		fmt.Print(err)
+	}
+
+	registry := Registry{}
+	err2 := yaml.Unmarshal(fileContent, &registry)
+	if err2 != nil {
+		fmt.Printf("Error unmarshalling yaml")
+		fmt.Print(err)
+	}
+	return registry
+}
+
 var (
+	registry        = initReg()
+	e2eRegistry     = registry.E2eRegistry
+	gcRegistry      = registry.GcRegistry
+	PrivateRegistry = registry.PrivateRegistry
+	sampleRegistry  = registry.SampleRegistry
+
 	AdmissionWebhook         = ImageConfig{e2eRegistry, "k8s-sample-admission-webhook", "1.10v2", true}
 	APIServer                = ImageConfig{e2eRegistry, "k8s-aggregator-sample-apiserver", "1.7v2", true}
 	AppArmorLoader           = ImageConfig{gcRegistry, "apparmor-loader", "0.1", false}
@@ -102,18 +127,15 @@ var (
 )
 
 func GetE2EImage(image ImageConfig) string {
-//	return GetE2EImageWithArch(image, runtime.GOARCH)
-        return "atuvenie/windows_k8s_e2e:0.1"
+	return GetE2EImageWithArch(image, runtime.GOARCH)
 }
 
 func GetE2EImageWithArch(image ImageConfig, arch string) string {
-/*	if image.hasArch {
-		return fmt.Sprintf("%s/%s-%s:%s", image.registry, image.name, arch, image.version)
+	if image.hasArch {
+		return fmt.Sprintf("%s/%s:%s", image.registry, image.name, image.version)
 	} else {
 		return fmt.Sprintf("%s/%s:%s", image.registry, image.name, image.version)
-
-	}*/
-        return "atuvenie/windows_k8s_e2e:0.1"
+	}
 }
 
 // GetPauseImageName returns the pause image name with proper version
