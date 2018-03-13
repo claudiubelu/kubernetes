@@ -14,6 +14,7 @@ go_library(
     importpath = "k8s.io/kubernetes/test/e2e/storage/utils",
     deps = [
         "//test/e2e/framework:go_default_library",
+        "//test/utils/image:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/gomega:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
