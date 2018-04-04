@@ -18,7 +18,6 @@ package common
 
 import (
 	"fmt"
-	"os"
 	"path"
 
 	"k8s.io/api/core/v1"
@@ -175,9 +174,10 @@ var _ = Describe("[sig-storage] Secrets", func() {
 			},
 		}
 
-		f.TestContainerOutput("consume secrets", pod, 0, []string{
-			"content of file \"/etc/secret-volume/data-1\": value-1",
-			"mode of file \"/etc/secret-volume/data-1\": -rw-r--r--",
+		fileModeRegexp := framework.GetFileModeRegex("/etc/secret-volume/data-1", nil)
+		f.TestContainerOutputRegexp("consume secrets", pod, 0, []string{
+			"content of file \"/etc\\/secret-volume\\/data-1\": value-1",
+			fileModeRegexp,
 		})
 	})
 
@@ -424,9 +424,6 @@ func doSecretE2EWithoutMapping(f *framework.Framework, defaultMode *int32, secre
 
 	if defaultMode != nil {
 		pod.Spec.Volumes[0].VolumeSource.Secret.DefaultMode = defaultMode
-	} else {
-		mode := int32(0644)
-		defaultMode = &mode
 	}
 
 	if fsGroup != nil || uid != nil {
@@ -436,13 +433,13 @@ func doSecretE2EWithoutMapping(f *framework.Framework, defaultMode *int32, secre
 		}
 	}
 
-	modeString := fmt.Sprintf("%v", os.FileMode(*defaultMode))
+	fileModeRegexp := framework.GetFileModeRegex("/etc/secret-volume/data-1", defaultMode)
 	expectedOutput := []string{
-		"content of file \"/etc/secret-volume/data-1\": value-1",
-		"mode of file \"/etc/secret-volume/data-1\": " + modeString,
+		"content of file \"\\/etc\\/secret-volume\\/data-1\": value-1",
+		fileModeRegexp,
 	}
 
-	f.TestContainerOutput("consume secrets", pod, 0, expectedOutput)
+	f.TestContainerOutputRegexp("consume secrets", pod, 0, expectedOutput)
 }
 
 func doSecretE2EWithMapping(f *framework.Framework, mode *int32) {
@@ -501,16 +498,13 @@ func doSecretE2EWithMapping(f *framework.Framework, mode *int32) {
 
 	if mode != nil {
 		pod.Spec.Volumes[0].VolumeSource.Secret.Items[0].Mode = mode
-	} else {
-		defaultItemMode := int32(0644)
-		mode = &defaultItemMode
-	}
+        }
 
-	modeString := fmt.Sprintf("%v", os.FileMode(*mode))
+	fileModeRegexp := framework.GetFileModeRegex("/etc/secret-volume/new-path-data-1", mode)
 	expectedOutput := []string{
-		"content of file \"/etc/secret-volume/new-path-data-1\": value-1",
-		"mode of file \"/etc/secret-volume/new-path-data-1\": " + modeString,
+		"content of file \"\\/etc\\/secret-volume\\/new-path-data-1\": value-1",
+		fileModeRegexp,
 	}
 
-	f.TestContainerOutput("consume secrets", pod, 0, expectedOutput)
+	f.TestContainerOutputRegexp("consume secrets", pod, 0, expectedOutput)
 }

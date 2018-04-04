@@ -5245,3 +5245,38 @@ func GetClusterZones(c clientset.Interface) (sets.String, error) {
 	}
 	return zones, nil
 }
+
+func GetFileModeRegex(filePath string, mask *int32) string {
+    return _GetFileAttributeRegex("mode", filePath, mask)
+}
+
+func GetFilePermsRegex(filePath string, mask *int32) string {
+    return _GetFileAttributeRegex("perms", filePath, mask)
+}
+
+func _GetFileAttributeRegex(attributeName string, filePath string, mask *int32) string {
+    var (
+        linuxMask    int32
+        windowsMask  int32
+    )
+    if mask == nil {
+        linuxMask = int32(0644)
+        windowsMask = int32(0775)
+    } else {
+        linuxMask = *mask
+        windowsMask = *mask
+    }
+
+    // forward slashes have to be escaped for regexp
+    filePath = strings.Replace(filePath, "/", "\\/", -1)
+
+    linuxModeString := fmt.Sprintf("%v", os.FileMode(linuxMask))
+    windowsModeString := fmt.Sprintf("%v", os.FileMode(windowsMask))
+
+    linuxOutput := fmt.Sprintf("%s of file \"%s\": %s",
+                               attributeName, filePath, linuxModeString)
+    windowsOutput := fmt.Sprintf("%s of Windows file \"%s\": %s",
+                                 attributeName, filePath, windowsModeString)
+
+    return fmt.Sprintf("(%s|%s)",  linuxOutput, windowsOutput)
+}

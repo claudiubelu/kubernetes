@@ -18,7 +18,6 @@ package common
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"time"
 
@@ -193,9 +192,10 @@ var _ = Describe("[sig-storage] Projected", func() {
 			},
 		}
 
-		f.TestContainerOutput("consume secrets", pod, 0, []string{
-			"content of file \"/etc/projected-secret-volume/data-1\": value-1",
-			"mode of file \"/etc/projected-secret-volume/data-1\": -rw-r--r--",
+		fileModeRegexp := framework.GetFileModeRegex("/etc/projected-secret-volume/data-1", nil)
+		f.TestContainerOutputRegexp("consume secrets", pod, 0, []string{
+			"content of file \"\\/etc\\/projected-secret-volume\\/data-1\": value-1",
+			fileModeRegexp,
 		})
 	})
 
@@ -884,8 +884,9 @@ var _ = Describe("[sig-storage] Projected", func() {
 		defaultMode := int32(0400)
 		pod := projectedDownwardAPIVolumePodForModeTest(podName, "/etc/podinfo/podname", nil, &defaultMode)
 
-		f.TestContainerOutput("downward API volume plugin", pod, 0, []string{
-			"mode of file \"/etc/podinfo/podname\": -r--------",
+		fileModeRegexp := framework.GetFileModeRegex("/etc/projected-secret-volume/data-1", &defaultMode)
+		f.TestContainerOutputRegexp("downward API volume plugin", pod, 0, []string{
+			fileModeRegexp,
 		})
 	})
 
@@ -899,8 +900,9 @@ var _ = Describe("[sig-storage] Projected", func() {
 		mode := int32(0400)
 		pod := projectedDownwardAPIVolumePodForModeTest(podName, "/etc/podinfo/podname", &mode, nil)
 
-		f.TestContainerOutput("downward API volume plugin", pod, 0, []string{
-			"mode of file \"/etc/podinfo/podname\": -r--------",
+		fileModeRegexp := framework.GetFileModeRegex("/etc/podinfo/podname", &mode)
+		f.TestContainerOutputRegexp("downward API volume plugin", pod, 0, []string{
+			fileModeRegexp,
 		})
 	})
 
@@ -928,8 +930,9 @@ var _ = Describe("[sig-storage] Projected", func() {
 			RunAsUser: &uid,
 			FSGroup:   &gid,
 		}
+		fileModeRegexp := framework.GetFileModeRegex("/etc/podinfo/podname", &mode)
 		f.TestContainerOutput("downward API volume plugin", pod, 0, []string{
-			"mode of file \"/etc/podinfo/podname\": -r--r-----",
+			fileModeRegexp,
 		})
 	})
 
@@ -1205,9 +1208,6 @@ func doProjectedSecretE2EWithoutMapping(f *framework.Framework, defaultMode *int
 	if defaultMode != nil {
 		//pod.Spec.Volumes[0].VolumeSource.Projected.Sources[0].Secret.DefaultMode = defaultMode
 		pod.Spec.Volumes[0].VolumeSource.Projected.DefaultMode = defaultMode
-	} else {
-		mode := int32(0644)
-		defaultMode = &mode
 	}
 
 	if fsGroup != nil || uid != nil {
@@ -1217,13 +1217,13 @@ func doProjectedSecretE2EWithoutMapping(f *framework.Framework, defaultMode *int
 		}
 	}
 
-	modeString := fmt.Sprintf("%v", os.FileMode(*defaultMode))
+	fileModeRegexp := framework.GetFileModeRegex("/etc/projected-secret-volume/data-1", defaultMode)
 	expectedOutput := []string{
-		"content of file \"/etc/projected-secret-volume/data-1\": value-1",
-		"mode of file \"/etc/projected-secret-volume/data-1\": " + modeString,
+		"content of file \"\\/etc\\/projected-secret-volume\\/data-1\": value-1",
+		fileModeRegexp,
 	}
 
-	f.TestContainerOutput("consume secrets", pod, 0, expectedOutput)
+	f.TestContainerOutputRegexp("consume secrets", pod, 0, expectedOutput)
 }
 
 func doProjectedSecretE2EWithMapping(f *framework.Framework, mode *int32) {
@@ -1291,18 +1291,15 @@ func doProjectedSecretE2EWithMapping(f *framework.Framework, mode *int32) {
 	if mode != nil {
 		//pod.Spec.Volumes[0].VolumeSource.Projected.Sources[0].Secret.Items[0].Mode = mode
 		pod.Spec.Volumes[0].VolumeSource.Projected.DefaultMode = mode
-	} else {
-		defaultItemMode := int32(0644)
-		mode = &defaultItemMode
 	}
 
-	modeString := fmt.Sprintf("%v", os.FileMode(*mode))
+	fileModeRegexp := framework.GetFileModeRegex("/etc/projected-secret-volume/new-path-data-1", mode)
 	expectedOutput := []string{
-		"content of file \"/etc/projected-secret-volume/new-path-data-1\": value-1",
-		"mode of file \"/etc/projected-secret-volume/new-path-data-1\": " + modeString,
+		"content of file \"\\/etc\\/projected-secret-volume\\/new-path-data-1\": value-1",
+		fileModeRegexp,
 	}
 
-	f.TestContainerOutput("consume secrets", pod, 0, expectedOutput)
+	f.TestContainerOutputRegexp("consume secrets", pod, 0, expectedOutput)
 }
 
 func doProjectedConfigMapE2EWithoutMappings(f *framework.Framework, uid, fsGroup int64, defaultMode *int32) {
@@ -1376,17 +1373,14 @@ func doProjectedConfigMapE2EWithoutMappings(f *framework.Framework, uid, fsGroup
 	if defaultMode != nil {
 		//pod.Spec.Volumes[0].VolumeSource.Projected.Sources[0].ConfigMap.DefaultMode = defaultMode
 		pod.Spec.Volumes[0].VolumeSource.Projected.DefaultMode = defaultMode
-	} else {
-		mode := int32(0644)
-		defaultMode = &mode
 	}
 
-	modeString := fmt.Sprintf("%v", os.FileMode(*defaultMode))
+	fileModeRegexp := framework.GetFileModeRegex("/etc/projected-configmap-volume/data-1", defaultMode)
 	output := []string{
-		"content of file \"/etc/projected-configmap-volume/data-1\": value-1",
-		"mode of file \"/etc/projected-configmap-volume/data-1\": " + modeString,
+		"content of file \"\\/etc\\/projected-configmap-volume\\/data-1\": value-1",
+		fileModeRegexp,
 	}
-	f.TestContainerOutput("consume configMaps", pod, 0, output)
+	f.TestContainerOutputRegexp("consume configMaps", pod, 0, output)
 }
 
 func doProjectedConfigMapE2EWithMappings(f *framework.Framework, uid, fsGroup int64, itemMode *int32) {
@@ -1467,21 +1461,19 @@ func doProjectedConfigMapE2EWithMappings(f *framework.Framework, uid, fsGroup in
 	if itemMode != nil {
 		//pod.Spec.Volumes[0].VolumeSource.ConfigMap.Items[0].Mode = itemMode
 		pod.Spec.Volumes[0].VolumeSource.Projected.DefaultMode = itemMode
-	} else {
-		mode := int32(0644)
-		itemMode = &mode
 	}
 
 	// Just check file mode if fsGroup is not set. If fsGroup is set, the
 	// final mode is adjusted and we are not testing that case.
 	output := []string{
-		"content of file \"/etc/projected-configmap-volume/path/to/data-2\": value-2",
+		"content of file \"\\/etc\\/projected-configmap-volume\\/path\\/to\\/data-2\": value-2",
 	}
 	if fsGroup == 0 {
-		modeString := fmt.Sprintf("%v", os.FileMode(*itemMode))
-		output = append(output, "mode of file \"/etc/projected-configmap-volume/path/to/data-2\": "+modeString)
+		fileModeRegexp := framework.GetFileModeRegex(
+			"/etc/projected-configmap-volume/path/to/data-2", itemMode)
+		output = append(output, fileModeRegexp)
 	}
-	f.TestContainerOutput("consume configMaps", pod, 0, output)
+	f.TestContainerOutputRegexp("consume configMaps", pod, 0, output)
 }
 
 func projectedDownwardAPIVolumePodForModeTest(name, filePath string, itemMode, defaultMode *int32) *v1.Pod {
