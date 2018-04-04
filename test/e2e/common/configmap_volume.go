@@ -662,7 +662,7 @@ func doConfigMapE2EWithMappings(f *framework.Framework, uid, fsGroup int64, item
 							Items: []v1.KeyToPath{
 								{
 									Key:  "data-2",
-									Path: "path/to/data-2",
+									Path: "path-to-data-2",
 								},
 							},
 						},
@@ -673,8 +673,8 @@ func doConfigMapE2EWithMappings(f *framework.Framework, uid, fsGroup int64, item
 				{
 					Name:  "configmap-volume-test",
 					Image: mountImage,
-					Args: []string{"--file_content=/etc/configmap-volume/path/to/data-2",
-						"--file_mode=/etc/configmap-volume/path/to/data-2"},
+					Args: []string{"--file_content=/etc/configmap-volume/path-to-data-2",
+						"--file_mode=/etc/configmap-volume/path-to-data-2"},
 					VolumeMounts: []v1.VolumeMount{
 						{
 							Name:      volumeName,
@@ -704,10 +704,10 @@ func doConfigMapE2EWithMappings(f *framework.Framework, uid, fsGroup int64, item
 	// Just check file mode if fsGroup is not set. If fsGroup is set, the
 	// final mode is adjusted and we are not testing that case.
 	output := []string{
-		"content of file \"\\/etc\\/configmap-volume\\/path\\/to\\/data-2\": value-2",
+		"content of file \"\\/etc\\/configmap-volume\\/path-to-data-2\": value-2",
 	}
 	if fsGroup == 0 {
-		fileModeRegexp := framework.GetFileModeRegex("/etc/configmap-volume/path/to/data-2", itemMode)
+		fileModeRegexp := framework.GetFileModeRegex("/etc/configmap-volume/path-to-data-2", itemMode)
 		output = append(output, fileModeRegexp)
 	}
 	f.TestContainerOutputRegexp("consume configMaps", pod, 0, output)
