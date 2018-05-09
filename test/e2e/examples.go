@@ -36,6 +36,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/serviceaccount"
 	clientset "k8s.io/client-go/kubernetes"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
+	commonutils "k8s.io/kubernetes/test/e2e/common"
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/generated"
 	testutils "k8s.io/kubernetes/test/utils"
@@ -599,7 +600,7 @@ func makeHttpRequestToService(c clientset.Interface, ns, service, path string, t
 }
 
 func createFileForGoBinData(gobindataPath, outputFilename string) error {
-	data := generated.ReadOrDie(gobindataPath)
+	data := []byte(commonutils.SubstituteImageName(string(generated.ReadOrDie(gobindataPath))))
 	if len(data) == 0 {
 		return fmt.Errorf("Failed to read gobindata from %v", gobindataPath)
 	}
