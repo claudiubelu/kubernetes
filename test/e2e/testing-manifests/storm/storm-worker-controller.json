@@ -23,7 +23,7 @@
         "containers": [
           {
             "name": "storm-worker",
-            "image": "mattf/storm-worker",
+            "image": "{{.StormWorkerImage}}",
             "ports": [
               {
                 "hostPort": 6700,

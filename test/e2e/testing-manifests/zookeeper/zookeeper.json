@@ -11,7 +11,7 @@
     "containers": [
       {
         "name": "zookeeper",
-        "image": "mattf/zookeeper",
+        "image": "{{.ZookeeperImage}}",
         "ports": [
           {
             "containerPort": 2181

@@ -72,8 +72,11 @@ var CommonImageWhiteList = sets.NewString(
 
 var testImages = struct {
 	BusyBoxImage      string
+	CassandraImage    string
+	CassandraE2ETestImage string
 	GBFrontendImage   string
 	GBRedisSlaveImage string
+	HazelcastImage    string
 	KittenImage       string
 	LivenessImage     string
 	MounttestImage    string
@@ -82,10 +85,18 @@ var testImages = struct {
 	NginxSlimNewImage string
 	PauseImage        string
 	RedisImage        string
+	RethinkdbImage    string
+	SparkImage        string
+	StormNimbusImage  string
+	StormWorkerImage  string
+	ZookeeperImage    string
 }{
 	imageutils.GetE2EImage(imageutils.BusyBox),
+	imageutils.GetE2EImage(imageutils.Cassandra),
+	imageutils.GetE2EImage(imageutils.CassandraE2ETest),
 	imageutils.GetE2EImage(imageutils.GBFrontend),
 	imageutils.GetE2EImage(imageutils.GBRedisSlave),
+	imageutils.GetE2EImage(imageutils.Hazelcast),
 	imageutils.GetE2EImage(imageutils.Kitten),
 	imageutils.GetE2EImage(imageutils.Liveness),
 	imageutils.GetE2EImage(imageutils.Mounttest),
@@ -94,6 +105,11 @@ var testImages = struct {
 	imageutils.GetE2EImage(imageutils.NginxSlimNew),
 	imageutils.GetE2EImage(imageutils.Pause),
 	imageutils.GetE2EImage(imageutils.Redis),
+	imageutils.GetE2EImage(imageutils.Rethinkdb),
+	imageutils.GetE2EImage(imageutils.Spark),
+	imageutils.GetE2EImage(imageutils.StormNimbus),
+	imageutils.GetE2EImage(imageutils.StormWorker),
+	imageutils.GetE2EImage(imageutils.Zookeeper),
 }
 
 func SubstituteImageName(content string) string {

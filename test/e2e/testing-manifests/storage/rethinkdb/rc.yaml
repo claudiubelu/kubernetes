@@ -16,7 +16,7 @@ spec:
         role: replicas
     spec:
       containers:
-      - image: k8s.gcr.io/rethinkdb:1.16.0_1
+      - image: {{.RethinkdbImage}}
         name: rethinkdb
         env:
         - name: POD_NAMESPACE

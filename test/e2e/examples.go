@@ -85,7 +85,9 @@ var _ = framework.KubeDescribe("[Feature:Example]", func() {
 	framework.KubeDescribe("Redis", func() {
 		It("should create and stop redis servers", func() {
 			mkpath := func(file string) string {
-				return filepath.Join(framework.TestContext.RepoRoot, "test/e2e/testing-manifests/storage/redis", file)
+				path := filepath.Join("test/e2e/testing-manifests/storage/redis", file)
+				framework.ExpectNoError(createFileForGoBinData(path, path))
+				return filepath.Join(framework.TestContext.OutputDir, path)
 			}
 			bootstrapYaml := mkpath("redis-master.yaml")
 			sentinelServiceYaml := mkpath("redis-sentinel-service.yaml")
@@ -163,7 +165,9 @@ var _ = framework.KubeDescribe("[Feature:Example]", func() {
 	framework.KubeDescribe("Spark", func() {
 		It("should start spark master, driver and workers", func() {
 			mkpath := func(file string) string {
-				return filepath.Join(framework.TestContext.RepoRoot, "test/e2e/testing-manifests/spark", file)
+				path := filepath.Join("test/e2e/testing-manifests/spark", file)
+				framework.ExpectNoError(createFileForGoBinData(path, path))
+				return filepath.Join(framework.TestContext.OutputDir, path)
 			}
 
 			// TODO: Add Zepplin and Web UI to this example.
@@ -227,7 +231,9 @@ var _ = framework.KubeDescribe("[Feature:Example]", func() {
 	framework.KubeDescribe("Cassandra", func() {
 		It("should create and scale cassandra", func() {
 			mkpath := func(file string) string {
-				return filepath.Join(framework.TestContext.RepoRoot, "test/e2e/testing-manifests/statefulset/cassandra", file)
+				path := filepath.Join("test/e2e/testing-manifests/statefulset/cassandra", file)
+				framework.ExpectNoError(createFileForGoBinData(path, path))
+				return filepath.Join(framework.TestContext.OutputDir, path)
 			}
 			serviceYaml := mkpath("service.yaml")
 			controllerYaml := mkpath("controller.yaml")
@@ -266,17 +272,20 @@ var _ = framework.KubeDescribe("[Feature:Example]", func() {
 	framework.KubeDescribe("CassandraStatefulSet", func() {
 		It("should create statefulset", func() {
 			mkpath := func(file string) string {
-				return filepath.Join("test/e2e/testing-manifests/statefulset/cassandra", file)
+				path := filepath.Join("test/e2e/testing-manifests/statefulset/cassandra", file)
+				framework.ExpectNoError(createFileForGoBinData(path, path))
+				return path
 			}
 			serviceYaml := filepath.Join(framework.TestContext.OutputDir, mkpath("service.yaml"))
 			nsFlag := fmt.Sprintf("--namespace=%v", ns)
 
 			// have to change dns prefix because of the dynamic namespace
 			input := generated.ReadOrDie(mkpath("statefulset.yaml"))
+			data := commonutils.SubstituteImageName(string(input))
 
-			output := strings.Replace(string(input), "$(POD_NAMESPACE)", ns, -1)
+			output := strings.Replace(data, "$(POD_NAMESPACE)", ns, -1)
 
-			statefulsetYaml := "/tmp/cassandra-statefulset.yaml"
+			statefulsetYaml := "statefulset.yaml"
 
 			err := ioutil.WriteFile(statefulsetYaml, []byte(output), 0644)
 			Expect(err).NotTo(HaveOccurred())
@@ -338,7 +347,9 @@ var _ = framework.KubeDescribe("[Feature:Example]", func() {
 	framework.KubeDescribe("Storm", func() {
 		It("should create and stop Zookeeper, Nimbus and Storm worker servers", func() {
 			mkpath := func(app, file string) string {
-				return filepath.Join(framework.TestContext.RepoRoot, "test/e2e/testing-manifests", app, file)
+				path := filepath.Join("test/e2e/testing-manifests", app, file)
+				framework.ExpectNoError(createFileForGoBinData(path, path))
+				return filepath.Join(framework.TestContext.OutputDir, path)
 			}
 			zookeeperServiceJson := mkpath("zookeeper", "zookeeper-service.json")
 			zookeeperPodJson := mkpath("zookeeper", "zookeeper.json")
@@ -497,7 +508,9 @@ var _ = framework.KubeDescribe("[Feature:Example]", func() {
 	framework.KubeDescribe("RethinkDB", func() {
 		It("should create and stop rethinkdb servers", func() {
 			mkpath := func(file string) string {
-				return filepath.Join(framework.TestContext.RepoRoot, "test/e2e/testing-manifests/storage/rethinkdb", file)
+				path := filepath.Join("test/e2e/testing-manifests/storage/rethinkdb", file)
+				framework.ExpectNoError(createFileForGoBinData(path, path))
+				return filepath.Join(framework.TestContext.OutputDir, path)
 			}
 			driverServiceYaml := mkpath("driver-service.yaml")
 			rethinkDbControllerYaml := mkpath("rc.yaml")
@@ -542,7 +555,9 @@ var _ = framework.KubeDescribe("[Feature:Example]", func() {
 	framework.KubeDescribe("Hazelcast", func() {
 		It("should create and scale hazelcast", func() {
 			mkpath := func(file string) string {
-				return filepath.Join(framework.TestContext.RepoRoot, "examples/storage/hazelcast", file)
+				path := filepath.Join("test/e2e/testing-manifests/storage/hazelcast", file)
+				framework.ExpectNoError(createFileForGoBinData(path, path))
+				return filepath.Join(framework.TestContext.OutputDir, path)
 			}
 			serviceYaml := mkpath("hazelcast-service.yaml")
 			deploymentYaml := mkpath("hazelcast-deployment.yaml")

@@ -19,6 +19,7 @@ spec:
     spec:
       containers:
         - command:
+            - /bin/bash
             - /run.sh
           resources:
             limits:
@@ -38,7 +39,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          image: gcr.io/google-samples/cassandra:v13
+          image: {{.CassandraImage}}
           name: cassandra
           ports:
             - containerPort: 7000
