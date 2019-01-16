@@ -29,4 +29,4 @@ source "${KUBE_ROOT}/cluster/kube-util.sh"
 
 prepare-e2e
 
-${KUBECTL} version
+#${KUBECTL} version
