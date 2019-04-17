@@ -28,14 +28,15 @@ source "${KUBE_ROOT}/hack/lib/util.sh"
 declare -A QEMUARCHS=( ["amd64"]="x86_64" ["arm"]="arm" ["arm64"]="aarch64" ["ppc64le"]="ppc64le" ["s390x"]="s390x" )
 
 # Returns list of all supported architectures from BASEIMAGE file
-listArchs() {
+listOsArchs() {
   cut -d "=" -f 1 "${IMAGE}"/BASEIMAGE
 }
 
 # Returns baseimage need to used in Dockerfile for any given architecture
 getBaseImage() {
-  arch=$1
-  grep "${arch}=" BASEIMAGE | cut -d= -f2
+  os_name=$1
+  arch=$2
+  grep "${os_name}/${arch}=" BASEIMAGE | cut -d= -f2
 }
 
 # This function will build test image for all the architectures
@@ -44,15 +45,24 @@ getBaseImage() {
 # arm64, ppc64le, s390x
 build() {
   if [[ -f ${IMAGE}/BASEIMAGE ]]; then
-    archs=$(listArchs)
+    os_archs=$(listOsArchs)
   else
-    archs=${!QEMUARCHS[*]}
+    # prepend linux/ to the QEMUARCHS items.
+    os_archs=$(printf 'linux/%s\n' "${!QEMUARCHS[*]}")
   fi
 
   kube::util::ensure-gnu-sed
 
-  for arch in ${archs}; do
-    echo "Building image for ${IMAGE} ARCH: ${arch}..."
+  for os_arch in ${os_archs}; do
+    if [[ $os_arch =~ .*/.* ]]; then
+      os_name=$(echo "$os_arch" | cut -d "/" -f 1)
+      arch=$(echo "$os_arch" | cut -d "/" -f 2)
+    else
+      echo "The BASEIMAGE file for the ${IMAGE} image is not properly formatted. Expected entries to start with 'os/arch', found '${os_arch}' instead."
+      exit 1
+    fi
+
+    echo "Building image for ${IMAGE} OS/ARCH: ${os_arch}..."
 
     # Create a temporary directory for every architecture and copy the image content
     # and build the image from temporary directory
@@ -71,7 +81,7 @@ build() {
     TAG=$(<VERSION)
 
     if [[ -f BASEIMAGE ]]; then
-      BASEIMAGE=$(getBaseImage "${arch}")
+      BASEIMAGE=$(getBaseImage "${os_name}" "${arch}")
       ${SED} -i "s|BASEIMAGE|${BASEIMAGE}|g" Dockerfile
       ${SED} -i "s|BASEARCH|${arch}|g" Dockerfile
     fi
@@ -117,11 +127,20 @@ push() {
   docker_version_check
   TAG=$(<"${IMAGE}"/VERSION)
   if [[ -f ${IMAGE}/BASEIMAGE ]]; then
-    archs=$(listArchs)
+    os_archs=$(listOsArchs)
   else
-    archs=${!QEMUARCHS[*]}
+    # prepend linux/ to the QEMUARCHS items.
+    os_archs=$(printf 'linux/%s\n' "${!QEMUARCHS[*]}")
   fi
-  for arch in ${archs}; do
+  for os_arch in ${os_archs}; do
+    if [[ $os_arch =~ .*/.* ]]; then
+      os_name=$(echo "$os_arch" | cut -d "/" -f 1)
+      arch=$(echo "$os_arch" | cut -d "/" -f 2)
+    else
+      echo "The BASEIMAGE file for the ${IMAGE} image is not properly formatted. Expected entries to start with 'os/arch', found '${os_arch}' instead."
+      exit 1
+    fi
+
     docker push "${REGISTRY}/${IMAGE}-${arch}:${TAG}"
   done
 
@@ -129,10 +148,17 @@ push() {
 
   # The manifest command is still experimental as of Docker 18.09.2
   export DOCKER_CLI_EXPERIMENTAL="enabled"
-  # Make archs list into image manifest. Eg: 'amd64 ppc64le' to '${REGISTRY}/${IMAGE}-amd64:${TAG} ${REGISTRY}/${IMAGE}-ppc64le:${TAG}'
-  while IFS='' read -r line; do manifest+=("$line"); done < <(echo "$archs" | ${SED} -e "s~[^ ]*~$REGISTRY\/$IMAGE\-&:$TAG~g")
+  # Make os_archs list into image manifest. Eg: 'linux/amd64 linux/ppc64le' to '${REGISTRY}/${IMAGE}-amd64:${TAG} ${REGISTRY}/${IMAGE}-ppc64le:${TAG}'
+  while IFS='' read -r line; do manifest+=("$line"); done < <(echo "$os_archs" | ${SED} "s~linux\/~~" | ${SED} -e "s~[^ ]*~$REGISTRY\/$IMAGE\-&:$TAG~g")
   docker manifest create --amend "${REGISTRY}/${IMAGE}:${TAG}" "${manifest[@]}"
-  for arch in ${archs}; do
+  for os_arch in ${os_archs}; do
+    if [[ $os_arch =~ .*/.* ]]; then
+      os_name=$(echo "$os_arch" | cut -d "/" -f 1)
+      arch=$(echo "$os_arch" | cut -d "/" -f 2)
+    else
+      echo "The BASEIMAGE file for the ${IMAGE} image is not properly formatted. Expected entries to start with 'os/arch', found '${os_arch}' instead."
+      exit 1
+    fi
     docker manifest annotate --arch "${arch}" "${REGISTRY}/${IMAGE}:${TAG}" "${REGISTRY}/${IMAGE}-${arch}:${TAG}"
   done
   docker manifest push --purge "${REGISTRY}/${IMAGE}:${TAG}"

@@ -1,5 +1,5 @@
-amd64=busybox
-arm=arm32v6/busybox
-arm64=arm64v8/busybox
-ppc64le=ppc64le/busybox
-s390x=s390x/busybox
+linux/amd64=busybox
+linux/arm=arm32v6/busybox
+linux/arm64=arm64v8/busybox
+linux/ppc64le=ppc64le/busybox
+linux/s390x=s390x/busybox
