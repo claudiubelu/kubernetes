@@ -106,7 +106,7 @@ build() {
       fi
     fi
 
-    docker build --pull -t "${REGISTRY}/${IMAGE}-${arch}:${TAG}" .
+    docker build --pull -t "${REGISTRY}/${IMAGE}:${TAG}-${os_name}-${arch}" .
 
     popd
   done
@@ -141,15 +141,15 @@ push() {
       exit 1
     fi
 
-    docker push "${REGISTRY}/${IMAGE}-${arch}:${TAG}"
+    docker push "${REGISTRY}/${IMAGE}:${TAG}-${os_name}-${arch}"
   done
 
   kube::util::ensure-gnu-sed
 
   # The manifest command is still experimental as of Docker 18.09.2
   export DOCKER_CLI_EXPERIMENTAL="enabled"
-  # Make os_archs list into image manifest. Eg: 'linux/amd64 linux/ppc64le' to '${REGISTRY}/${IMAGE}-amd64:${TAG} ${REGISTRY}/${IMAGE}-ppc64le:${TAG}'
-  while IFS='' read -r line; do manifest+=("$line"); done < <(echo "$os_archs" | ${SED} "s~linux\/~~" | ${SED} -e "s~[^ ]*~$REGISTRY\/$IMAGE\-&:$TAG~g")
+  # Make os_archs list into image manifest. Eg: 'linux/amd64 linux/ppc64le' to '${REGISTRY}/${IMAGE}:${TAG}-linux-amd64 ${REGISTRY}/${IMAGE}:${TAG}-linux-ppc64le'
+  while IFS='' read -r line; do manifest+=("$line"); done < <(echo "$os_archs" | ${SED} "s~\/~-~" | ${SED} -e "s~[^ ]*~$REGISTRY\/$IMAGE:$TAG\-&~g")
   docker manifest create --amend "${REGISTRY}/${IMAGE}:${TAG}" "${manifest[@]}"
   for os_arch in ${os_archs}; do
     if [[ $os_arch =~ .*/.* ]]; then
@@ -159,7 +159,7 @@ push() {
       echo "The BASEIMAGE file for the ${IMAGE} image is not properly formatted. Expected entries to start with 'os/arch', found '${os_arch}' instead."
       exit 1
     fi
-    docker manifest annotate --arch "${arch}" "${REGISTRY}/${IMAGE}:${TAG}" "${REGISTRY}/${IMAGE}-${arch}:${TAG}"
+    docker manifest annotate --arch "${arch}" "${REGISTRY}/${IMAGE}:${TAG}" "${REGISTRY}/${IMAGE}:${TAG}-${os_name}-${arch}"
   done
   docker manifest push --purge "${REGISTRY}/${IMAGE}:${TAG}"
 }

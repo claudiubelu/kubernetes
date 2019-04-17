@@ -1,5 +1,5 @@
-linux/amd64=REGISTRY/mounttest-amd64:1.1
-linux/arm=REGISTRY/mounttest-arm:1.1
-linux/arm64=REGISTRY/mounttest-arm64:1.1
-linux/ppc64le=REGISTRY/mounttest-ppc64le:1.1
-linux/s390x=REGISTRY/mounttest-s390x:1.1
+linux/amd64=REGISTRY/mounttest:1.1-linux-amd64
+linux/arm=REGISTRY/mounttest:1.1-linux-arm
+linux/arm64=REGISTRY/mounttest:1.1-linux-arm64
+linux/ppc64le=REGISTRY/mounttest:1.1-linux-ppc64le
+linux/s390x=REGISTRY/mounttest:1.1-linux-s390x
