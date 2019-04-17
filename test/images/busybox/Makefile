@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SRCS=regression-issue-74839
-OS ?= linux
+SRCS=hostname
+OS ?= windows
 ARCH ?= amd64
 TARGET ?= $(CURDIR)
-GOARM ?= 7
+GOARM = 7
 GOLANG_VERSION ?= latest
 SRC_DIR = $(notdir $(shell pwd))
-
 export
 
-.PHONY: bin
 bin:
 	../image-util.sh bin $(SRCS)
 
+.PHONY: bin

@@ -529,11 +529,17 @@ Usage:
 
 ## Other tools
 
-The image contains `iperf`.
+The image contains `iperf`, for both Windows and Linux.
+
+For Windows, the image is based on `busybox`, meaning that most of the Linux common tools are also
+available on it, making it possible to run most Linux commands in the `agnhost` Windows container
+as well. Keep in mind that there might still be some differences though (e.g.: `wget` does not
+have the `-T` argument on Windows).
+
+The Windows `agnhost` image includes a `nc` binary that is 100% compliant with its Linux equivalent.
 
 
 ## Image
 
-The image can be found at `gcr.io/kubernetes-e2e-test-images/agnhost:2.7` for Linux
-containers, and `e2eteam/agnhost:2.7` for Windows containers. In the future, the same
-repository can be used for both OSes.
+The image can be found at `gcr.io/kubernetes-e2e-test-images/agnhost:2.7` for both Linux and
+Windows containers (based on `mcr.microsoft.com/windows/servercore:ltsc2019`).
