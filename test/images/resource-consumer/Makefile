@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SRCS = consumer consume-cpu/consume-cpu
+SRCS = consumer consume-cpu/consume-cpu consume-memory/consume-memory
 OS ?= linux
 ARCH ?= amd64
 TARGET ?= $(CURDIR)
