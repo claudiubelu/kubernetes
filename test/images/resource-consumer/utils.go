@@ -20,13 +20,23 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strconv"
 )
 
-const (
-	consumeCPUBinary = "./consume-cpu/consume-cpu"
-	consumeMemBinary = "stress"
+var (
+	consumeCPUBinary = getBinaryPath("./consume-cpu/consume-cpu")
+	consumeMemBinary = getBinaryPath("./consume-memory/consume-memory")
 )
+
+func getBinaryPath(path string) string {
+	if runtime.GOOS == "windows" {
+		path, _ = filepath.Abs(fmt.Sprintf("%s.exe", path))
+		return path
+	}
+	return path
+}
 
 // ConsumeCPU consumes a given number of millicores for the specified duration.
 func ConsumeCPU(millicores int, durationSec int) {
@@ -35,7 +45,10 @@ func ConsumeCPU(millicores int, durationSec int) {
 	arg1 := fmt.Sprintf("-millicores=%d", millicores)
 	arg2 := fmt.Sprintf("-duration-sec=%d", durationSec)
 	consumeCPU := exec.Command(consumeCPUBinary, arg1, arg2)
-	consumeCPU.Run()
+	err := consumeCPU.Run()
+	if err != nil {
+		log.Printf("Error while consuming CPU: %v", err)
+	}
 }
 
 // ConsumeMem consumes a given number of megabytes for the specified duration.
@@ -45,7 +58,10 @@ func ConsumeMem(megabytes int, durationSec int) {
 	durationSecString := strconv.Itoa(durationSec)
 	// creating new consume memory process
 	consumeMem := exec.Command(consumeMemBinary, "-m", "1", "--vm-bytes", megabytesString, "--vm-hang", "0", "-t", durationSecString)
-	consumeMem.Run()
+	err := consumeMem.Run()
+	if err != nil {
+		log.Printf("Error while consuming memory: %v", err)
+	}
 }
 
 // GetCurrentStatus prints out a no-op.

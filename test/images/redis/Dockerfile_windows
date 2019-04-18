@@ -1,4 +1,4 @@
-# Copyright 2016 The Kubernetes Authors.
+# Copyright 2020 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SRCS = consumer consume-cpu/consume-cpu consume-memory/consume-memory
-OS ?= linux
-ARCH ?= amd64
-TARGET ?= $(CURDIR)
-GOLANG_VERSION ?= latest
-SRC_DIR = $(notdir $(shell pwd))
-export
+ARG BASEIMAGE
+FROM $BASEIMAGE
 
-bin:
-	../image-util.sh bin $(SRCS)
+WORKDIR /redis
+RUN powershell -Command \
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 ; \
+Invoke-WebRequest -Method Get -Uri https://github.com/MSOpenTech/redis/releases/download/win-3.2.100/Redis-x64-3.2.100.zip -OutFile redis.zip ; \
+Expand-Archive redis.zip . ; \
+Remove-Item redis.zip -Force
 
-.PHONY: bin
+COPY redis.conf ./redis.windows.conf
+
+EXPOSE 6379
+VOLUME C:/data
+
+CMD ["redis-server", "redis.windows.conf"]
