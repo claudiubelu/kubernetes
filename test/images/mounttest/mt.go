@@ -1,5 +1,3 @@
-// +build linux
-
 /*
 Copyright 2015 The Kubernetes Authors.
 
@@ -23,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"syscall"
 	"time"
 )
 
@@ -68,7 +65,7 @@ func main() {
 	)
 
 	// Clear the umask so we can set any mode bits we want.
-	syscall.Umask(0000)
+	umask(0000)
 
 	// NOTE: the ordering of execution of the various command line
 	// flags is intentional and allows a single command to:
@@ -134,75 +131,6 @@ func main() {
 	}
 
 	os.Exit(0)
-}
-
-// Defined by Linux (sys/statfs.h) - the type number for tmpfs mounts.
-const linuxTmpfsMagic = 0x01021994
-
-func fsType(path string) error {
-	if path == "" {
-		return nil
-	}
-
-	buf := syscall.Statfs_t{}
-	if err := syscall.Statfs(path, &buf); err != nil {
-		fmt.Printf("error from statfs(%q): %v\n", path, err)
-		return err
-	}
-
-	if buf.Type == linuxTmpfsMagic {
-		fmt.Printf("mount type of %q: tmpfs\n", path)
-	} else {
-		fmt.Printf("mount type of %q: %v\n", path, buf.Type)
-	}
-
-	return nil
-}
-
-func fileMode(path string) error {
-	if path == "" {
-		return nil
-	}
-
-	fileinfo, err := os.Stat(path)
-	if err != nil {
-		fmt.Printf("error from Stat(%q): %v\n", path, err)
-		return err
-	}
-
-	fmt.Printf("mode of file %q: %v\n", path, fileinfo.Mode())
-	return nil
-}
-
-func filePerm(path string) error {
-	if path == "" {
-		return nil
-	}
-
-	fileinfo, err := os.Stat(path)
-	if err != nil {
-		fmt.Printf("error from Stat(%q): %v\n", path, err)
-		return err
-	}
-
-	fmt.Printf("perms of file %q: %v\n", path, fileinfo.Mode().Perm())
-	return nil
-}
-
-func fileOwner(path string) error {
-	if path == "" {
-		return nil
-	}
-
-	buf := syscall.Stat_t{}
-	if err := syscall.Stat(path, &buf); err != nil {
-		fmt.Printf("error from stat(%q): %v\n", path, err)
-		return err
-	}
-
-	fmt.Printf("owner UID of %q: %v\n", path, buf.Uid)
-	fmt.Printf("owner GID of %q: %v\n", path, buf.Gid)
-	return nil
 }
 
 func readFileContent(path string) error {

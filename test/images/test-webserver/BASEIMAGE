@@ -1,0 +1,7 @@
+linux/amd64=scratch
+linux/arm=scratch
+linux/arm64=scratch
+linux/ppc64le=scratch
+linux/s390x=scratch
+windows/amd64/1809=mcr.microsoft.com/windows/servercore:ltsc2019
+windows/amd64/1903=mcr.microsoft.com/windows/servercore:1903

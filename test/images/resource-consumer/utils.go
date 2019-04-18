@@ -25,7 +25,7 @@ import (
 
 const (
 	consumeCPUBinary = "./consume-cpu/consume-cpu"
-	consumeMemBinary = "stress"
+	consumeMemBinary = "./consume-memory/consume-memory"
 )
 
 // ConsumeCPU consumes a given number of millicores for the specified duration.

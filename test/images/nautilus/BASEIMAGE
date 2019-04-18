@@ -3,3 +3,5 @@ linux/arm=REGISTRY/test-webserver:1.1-linux-arm
 linux/arm64=REGISTRY/test-webserver:1.1-linux-arm64
 linux/ppc64le=REGISTRY/test-webserver:1.1-linux-ppc64le
 linux/s390x=REGISTRY/test-webserver:1.1-linux-s390x
+windows/amd64/1809=REGISTRY/test-webserver:1.1-windows-amd64-1809
+windows/amd64/1903=REGISTRY/test-webserver:1.1-windows-amd64-1903

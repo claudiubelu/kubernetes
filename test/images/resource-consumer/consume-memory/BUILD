@@ -6,14 +6,15 @@ load(
     "go_library",
 )
 
+go_binary(
+    name = "consume-memory",
+    embed = [":go_default_library"],
+)
+
 go_library(
     name = "go_default_library",
-    srcs = [
-        "mt.go",
-        "mt_utils.go",
-        "mt_utils_windows.go",
-    ],
-    importpath = "k8s.io/kubernetes/test/images/mounttest",
+    srcs = ["consume_memory.go"],
+    importpath = "k8s.io/kubernetes/test/images/resource-consumer/consume-memory",
 )
 
 filegroup(
@@ -27,9 +28,4 @@ filegroup(
     name = "all-srcs",
     srcs = [":package-srcs"],
     tags = ["automanaged"],
-)
-
-go_binary(
-    name = "mounttest",
-    embed = [":go_default_library"],
 )
