@@ -1,0 +1,2 @@
+windows/amd64/1809=mcr.microsoft.com/windows/servercore:ltsc2019
+windows/amd64/1903=mcr.microsoft.com/windows/servercore:1903
