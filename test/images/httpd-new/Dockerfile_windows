@@ -1,0 +1,37 @@
+# Copyright 2020 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ARG BASEIMAGE
+ARG REGISTRY
+FROM $REGISTRY/windows-image-builder-helper:1.0 as helper
+
+RUN choco install apache-httpd --version 2.4.39 -y &\
+    choco install php --version 7.2.14 -y --params '"/ThreadSafe "'
+
+FROM $BASEIMAGE
+
+COPY --from=helper /Windows/System32/vcruntime140.dll /Windows/System32/
+COPY --from=helper /Users/ContainerAdministrator/AppData/Roaming/Apache24 /Users/ContainerAdministrator/AppData/Roaming/Apache24
+COPY --from=helper /tools/php72 /tools/php72
+
+COPY httpd.conf /Users/ContainerAdministrator/AppData/Roaming/Apache24/conf/httpd.conf
+COPY index.html /Users/ContainerAdministrator/AppData/Roaming/Apache24/htdocs/index.html
+
+USER ContainerAdministrator
+RUN setx /M PATH "%PATH%;C:\tools\php72\;C:\Users\ContainerAdministrator\AppData\Roaming\Apache24\bin\;" &\
+    mkdir C:\usr\local &\
+    mklink /D C:\usr\local\apache2 C:\Users\ContainerAdministrator\AppData\Roaming\Apache24
+
+EXPOSE 80
+ENTRYPOINT ["C:/Users/ContainerAdministrator/AppData/Roaming/Apache24/bin/httpd.exe"]
