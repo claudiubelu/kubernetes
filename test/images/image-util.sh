@@ -91,6 +91,11 @@ build() {
       make -C "${image}" bin OS="${os_name}" ARCH="${arch}" TARGET="${temp_dir}"
     fi
     pushd "${temp_dir}"
+
+    # we might have to build multiple images with the same name, but different versions.
+    # in this case, they will have different folders. in order to keep the same name, they will
+    # have an ALIAS file with the actual image name.
+    image_name=$(cat ALIAS 2> /dev/null || echo "${image}")
     # image tag
     TAG=$(<VERSION)
 
@@ -129,7 +134,7 @@ build() {
     fi
 
     if [[ "$os_name" = "linux" ]]; then
-      docker build --pull -t "${REGISTRY}/${image}:${TAG}-${os_name}-${arch}" --build-arg BASEIMAGE="${BASEIMAGE}" .
+      docker build --pull -t "${REGISTRY}/${image_name}:${TAG}-${os_name}-${arch}" --build-arg BASEIMAGE="${BASEIMAGE}" .
     elif [[ -n "${REMOTE_DOCKER_URL:-}" ]]; then
       # NOTE(claudiub): We're using a remote Windows node to build the Windows Docker images.
       # The node requires TLS authentication, and thus it is expected that the
@@ -137,7 +142,7 @@ build() {
       # TODO(claudiub): add "build --isolation=hyperv" once GCE introduces Hyper-V support.
       docker --tlsverify --tlscacert "${HOME}/.docker-${os_version}/ca.pem" \
         --tlscert "${HOME}/.docker-${os_version}/cert.pem" --tlskey "${HOME}/.docker-${os_version}/key.pem" \
-        -H "${REMOTE_DOCKER_URL}" build --pull -t "${REGISTRY}/${image}:${TAG}-${os_name}-${arch}-${os_version}" \
+        -H "${REMOTE_DOCKER_URL}" build --pull -t "${REGISTRY}/${image_name}:${TAG}-${os_name}-${arch}-${os_version}" \
         --build-arg BASEIMAGE="${BASEIMAGE}" -f $dockerfile_name .
     else
       echo "Cannot build the image '${image}' for ${os_arch}. REMOTE_DOCKER_URL_$os_version should be set, containing the URL to a Windows docker daemon."
@@ -160,6 +165,7 @@ docker_version_check() {
 push() {
   image=$1
   docker_version_check
+  image_name=$(cat "${image}"/ALIAS 2> /dev/null || echo "${image}")
   TAG=$(<"${image}"/VERSION)
   if [[ -f ${image}/BASEIMAGE ]]; then
     os_archs=$(listOsArchs "$image")
@@ -189,12 +195,12 @@ push() {
     fi
 
     if [[ "$os_name" = "linux" ]]; then
-      docker push "${REGISTRY}/${image}:${TAG}-${os_name}-${arch}"
+      docker push "${REGISTRY}/${image_name}:${TAG}-${os_name}-${arch}"
     elif [[ -n "${REMOTE_DOCKER_URL:-}" ]]; then
       # NOTE(claudiub): We're pushing the image we built on the remote Windows node.
       docker --tlsverify --tlscacert "${HOME}/.docker-${os_version}/ca.pem" \
         --tlscert "${HOME}/.docker-${os_version}/cert.pem" --tlskey "${HOME}/.docker-${os_version}/key.pem" \
-        -H "${REMOTE_DOCKER_URL}" push "${REGISTRY}/${image}:${TAG}-${os_name}-${arch}-${os_version}"
+        -H "${REMOTE_DOCKER_URL}" push "${REGISTRY}/${image_name}:${TAG}-${os_name}-${arch}-${os_version}"
     else
       echo "Cannot push the image '${image}' for ${os_arch}. REMOTE_DOCKER_URL_${os_version} should be set, containing the URL to a Windows docker daemon."
     fi
@@ -213,9 +219,9 @@ push() {
   export DOCKER_CLI_EXPERIMENTAL="enabled"
   # reset manifest list; needed in case multiple images are being built / pushed.
   manifest=()
-  # Make os_archs list into image manifest. Eg: 'linux/amd64 linux/ppc64le' to '${REGISTRY}/${image}:${TAG}-linux-amd64 ${REGISTRY}/${image}:${TAG}-linux-ppc64le'
-  while IFS='' read -r line; do manifest+=("$line"); done < <(echo "$os_archs" | ${SED} "s~\/~-~g" | ${SED} -e "s~[^ ]*~$REGISTRY\/$image:$TAG\-&~g")
-  docker manifest create --amend "${REGISTRY}/${image}:${TAG}" "${manifest[@]}"
+  # Make os_archs list into image manifest. Eg: 'linux/amd64 linux/ppc64le' to '${REGISTRY}/${image_name}:${TAG}-linux-amd64 ${REGISTRY}/${image_name}:${TAG}-linux-ppc64le'
+  while IFS='' read -r line; do manifest+=("$line"); done < <(echo "$os_archs" | ${SED} "s~\/~-~g" | ${SED} -e "s~[^ ]*~$REGISTRY\/$image_name:$TAG\-&~g")
+  docker manifest create --amend "${REGISTRY}/${image_name}:${TAG}" "${manifest[@]}"
   for os_arch in ${os_archs}; do
     if [[ $os_arch =~ .*/.*/.* ]]; then
       # for Windows, we have to support both LTS and SAC channels, so we're building multiple Windows images.
@@ -232,9 +238,9 @@ push() {
       echo "The BASEIMAGE file for the ${image} image is not properly formatted. Expected entries to start with 'os/arch', found '${os_arch}' instead."
       exit 1
     fi
-    docker manifest annotate --os "${os_name}" --arch "${arch}" "${REGISTRY}/${image}:${TAG}" "${REGISTRY}/${image}:${TAG}-${suffix}"
+    docker manifest annotate --os "${os_name}" --arch "${arch}" "${REGISTRY}/${image_name}:${TAG}" "${REGISTRY}/${image_name}:${TAG}-${suffix}"
   done
-  docker manifest push --purge "${REGISTRY}/${image}:${TAG}"
+  docker manifest push --purge "${REGISTRY}/${image_name}:${TAG}"
 }
 
 # This function is for building the go code
