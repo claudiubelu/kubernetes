@@ -192,6 +192,11 @@ var _ = utils.SIGDescribe("PersistentVolumes-local ", func() {
 				if testVolType == GCELocalSSDVolumeType {
 					SkipUnlessLocalSSDExists(config, "scsi", "fs", config.node0)
 				}
+				// tmpfs volumes are not supported on Windows.
+				if testVolType == TmpfsLocalVolumeType {
+					e2eskipper.SkipUnlessNodeOSDistroIs("windows")
+				}
+
 				setupStorageClass(config, &testMode)
 				testVols := setupLocalVolumesPVCsPVs(config, testVolType, config.node0, 1, testMode)
 				testVol = testVols[0]

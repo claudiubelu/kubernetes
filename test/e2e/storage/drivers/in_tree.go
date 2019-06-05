@@ -1868,6 +1868,10 @@ func (l *localDriver) GetDriverInfo() *testsuites.DriverInfo {
 }
 
 func (l *localDriver) SkipUnsupportedTest(pattern testpatterns.TestPattern) {
+	// tmpfs volumes are not supported on Windows.
+	if l.volumeType == utils.LocalVolumeTmpfs {
+		e2eskipper.SkipUnlessNodeOSDistroIs("windows")
+	}
 }
 
 func (l *localDriver) PrepareTest(f *framework.Framework) (*testsuites.PerTestConfig, func()) {
