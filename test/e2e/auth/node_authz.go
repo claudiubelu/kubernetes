@@ -174,6 +174,12 @@ var _ = SIGDescribe("[Feature:NodeAuthorizer]", func() {
 		}
 		ginkgo.By(fmt.Sprintf("Create node foo by user: %v", asUser))
 		_, err := c.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
+		defer func() {
+			err := f.ClientSet.CoreV1().Nodes().Delete(context.TODO(), node.Name, metav1.DeleteOptions{})
+			if err != nil {
+				framework.Logf("Failed to get delete node %v, err: %v", node, err)
+			}
+		}()
 		framework.ExpectEqual(apierrors.IsForbidden(err), true)
 	})
 
