@@ -542,4 +542,5 @@ The Windows `agnhost` image includes a `nc` binary that is 100% compliant with i
 ## Image
 
 The image can be found at `gcr.io/kubernetes-e2e-test-images/agnhost:2.7` for both Linux and
-Windows containers (based on `mcr.microsoft.com/windows/servercore:ltsc2019`).
+Windows containers (based on `mcr.microsoft.com/windows/servercore:ltsc2019` and
+`mcr.microsoft.com/windows/servercore:1903`).

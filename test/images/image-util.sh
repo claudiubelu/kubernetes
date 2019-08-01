@@ -34,9 +34,8 @@ listOsArchs() {
 
 # Returns baseimage need to used in Dockerfile for any given architecture
 getBaseImage() {
-  os_name=$1
-  arch=$2
-  grep "${os_name}/${arch}=" BASEIMAGE | cut -d= -f2
+  os_arch=$1
+  grep "${os_arch}=" BASEIMAGE | cut -d= -f2
 }
 
 # This function will build test image for all the architectures
@@ -54,7 +53,13 @@ build() {
   kube::util::ensure-gnu-sed
 
   for os_arch in ${os_archs}; do
-    if [[ $os_arch =~ .*/.* ]]; then
+    if [[ $os_arch =~ .*/.*/.* ]]; then
+      # for Windows, we have to support both LTS and SAC channels, so we're building multiple Windows images.
+      # the format for this case is: OS/ARCH/OS_VERSION.
+      os_name=$(echo "$os_arch" | cut -d "/" -f 1)
+      arch=$(echo "$os_arch" | cut -d "/" -f 2)
+      os_version=$(echo "$os_arch" | cut -d "/" -f 3)
+    elif [[ $os_arch =~ .*/.* ]]; then
       os_name=$(echo "$os_arch" | cut -d "/" -f 1)
       arch=$(echo "$os_arch" | cut -d "/" -f 2)
     else
@@ -81,7 +86,7 @@ build() {
     TAG=$(<VERSION)
 
     if [[ -f BASEIMAGE ]]; then
-      BASEIMAGE=$(getBaseImage "${os_name}" "${arch}" | ${SED} "s|REGISTRY|${REGISTRY}|g")
+      BASEIMAGE=$(getBaseImage "${os_arch}" | ${SED} "s|REGISTRY|${REGISTRY}|g")
 
       # NOTE(claudiub): Some Windows images might require their own Dockerfile
       # while simpler ones will not. If we're building for Windows, check if
@@ -121,7 +126,7 @@ build() {
       # NOTE(claudiub): We're using a remote Windows node to build the Windows Docker images.
       # The node requires TLS authentication, and thus it is expected that the
       # ca.pem, cert.pem, key.pem files can be found in the ~/.docker folder.
-      docker --tlsverify -H "${REMOTE_DOCKER_URL}" build --pull -t "${REGISTRY}/${IMAGE}:${TAG}-${os_name}-${arch}" -f $dockerfile_name .
+      docker --tlsverify -H "${REMOTE_DOCKER_URL}" build --isolation=hyperv --pull -t "${REGISTRY}/${IMAGE}:${TAG}-${os_name}-${arch}-${os_version}" -f $dockerfile_name .
     else
       echo "Cannot build the image '${IMAGE}' for ${os_arch}. REMOTE_DOCKER_URL should be set, containing the URL to a Windows docker daemon."
     fi
@@ -156,7 +161,13 @@ push() {
     os_archs=$(printf 'linux/%s\n' "${!QEMUARCHS[*]}")
   fi
   for os_arch in ${os_archs}; do
-    if [[ $os_arch =~ .*/.* ]]; then
+    if [[ $os_arch =~ .*/.*/.* ]]; then
+      # for Windows, we have to support both LTS and SAC channels, so we're building multiple Windows images.
+      # the format for this case is: OS/ARCH/OS_VERSION.
+      os_name=$(echo "$os_arch" | cut -d "/" -f 1)
+      arch=$(echo "$os_arch" | cut -d "/" -f 2)
+      os_version=$(echo "$os_arch" | cut -d "/" -f 3)
+    elif [[ $os_arch =~ .*/.* ]]; then
       os_name=$(echo "$os_arch" | cut -d "/" -f 1)
       arch=$(echo "$os_arch" | cut -d "/" -f 2)
     else
@@ -168,7 +179,7 @@ push() {
       docker push "${REGISTRY}/${IMAGE}:${TAG}-${os_name}-${arch}"
     else
       # NOTE(claudiub): We're pushing the image we built on the remote Windows node.
-      docker --tlsverify -H "${REMOTE_DOCKER_URL}" push "${REGISTRY}/${IMAGE}:${TAG}-${os_name}-${arch}"
+      docker --tlsverify -H "${REMOTE_DOCKER_URL}" push "${REGISTRY}/${IMAGE}:${TAG}-${os_name}-${arch}-${os_version}"
     fi
   done
 
@@ -177,17 +188,25 @@ push() {
   # The manifest command is still experimental as of Docker 18.09.2
   export DOCKER_CLI_EXPERIMENTAL="enabled"
   # Make os_archs list into image manifest. Eg: 'linux/amd64 linux/ppc64le' to '${REGISTRY}/${IMAGE}:${TAG}-linux-amd64 ${REGISTRY}/${IMAGE}:${TAG}-linux-ppc64le'
-  while IFS='' read -r line; do manifest+=("$line"); done < <(echo "$os_archs" | ${SED} "s~\/~-~" | ${SED} -e "s~[^ ]*~$REGISTRY\/$IMAGE:$TAG\-&~g")
+  while IFS='' read -r line; do manifest+=("$line"); done < <(echo "$os_archs" | ${SED} "s~\/~-~g" | ${SED} -e "s~[^ ]*~$REGISTRY\/$IMAGE:$TAG\-&~g")
   docker manifest create --amend "${REGISTRY}/${IMAGE}:${TAG}" "${manifest[@]}"
   for os_arch in ${os_archs}; do
-    if [[ $os_arch =~ .*/.* ]]; then
+    if [[ $os_arch =~ .*/.*/.* ]]; then
+      # for Windows, we have to support both LTS and SAC channels, so we're building multiple Windows images.
+      # the format for this case is: OS/ARCH/OS_VERSION.
       os_name=$(echo "$os_arch" | cut -d "/" -f 1)
       arch=$(echo "$os_arch" | cut -d "/" -f 2)
+      os_version=$(echo "$os_arch" | cut -d "/" -f 3)
+      suffix="$os_name-$arch-$os_version"
+    elif [[ $os_arch =~ .*/.* ]]; then
+      os_name=$(echo "$os_arch" | cut -d "/" -f 1)
+      arch=$(echo "$os_arch" | cut -d "/" -f 2)
+      suffix="$os_name-$arch"
     else
       echo "The BASEIMAGE file for the ${IMAGE} image is not properly formatted. Expected entries to start with 'os/arch', found '${os_arch}' instead."
       exit 1
     fi
-    docker manifest annotate --os "${os_name}" --arch "${arch}" "${REGISTRY}/${IMAGE}:${TAG}" "${REGISTRY}/${IMAGE}:${TAG}-${os_name}-${arch}"
+    docker manifest annotate --os "${os_name}" --arch "${arch}" "${REGISTRY}/${IMAGE}:${TAG}" "${REGISTRY}/${IMAGE}:${TAG}-${suffix}"
   done
   docker manifest push --purge "${REGISTRY}/${IMAGE}:${TAG}"
 }
