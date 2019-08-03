@@ -1,7 +1,0 @@
-linux/amd64=busybox
-linux/arm=arm32v6/busybox
-linux/arm64=arm64v8/busybox
-linux/ppc64le=ppc64le/busybox
-linux/s390x=s390x/busybox
-windows/amd64/1809=mcr.microsoft.com/windows/servercore:ltsc2019
-windows/amd64/1903=mcr.microsoft.com/windows/servercore:1903

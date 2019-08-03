@@ -109,6 +109,43 @@ Usage:
 ```
 
 
+### consume-cpu
+
+Consumes the given amount of millicores over the given amount of time. This subcommand is also used by the
+`resource-consumer` subcommand.
+
+The subcommand can accept the following flags:
+
+- `millicores` (default: `0`): Number of millicores to be consumed. Cannot consume more than 1 CPU.
+- `duration-sec` (default: `0`): Time duration in seconds.
+
+
+Usage:
+
+```console
+    kubectl exec test-agnhost -- /agnhost consume-cpu [--millicores <number_millicores>] [--duration-sec <seconds>]
+```
+
+
+### consume-memory
+
+Consumes the given amount of memory over the given amount of time. This subcommand is also used by the
+`resource-consumer` subcommand.
+
+The subcommand can accept the following flags:
+
+- `workers`, `-m` (default: `0`): The number of workers spinning on `malloc()/free()`
+- `vm-bytes` (default: `256M): The number of bytes per worker
+- `timeout`, `-t` (default: `0`): Timeout after N seconds
+
+Usage:
+
+```console
+    kubectl exec test-agnhost -- /agnhost consume-memory \
+        [--workers <number-workers>] [--vm-bytes <bytes>] [--timeout <seconds>]
+```
+
+
 ### crd-conversion-webhook
 
 The subcommand tests `CustomResourceConversionWebhook`. After deploying it to Kubernetes cluster,
@@ -271,6 +308,37 @@ kubectl run logs-generator \
 ```
 
 [![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/test/images/logs-generator/README.md?pixel)]()
+
+
+### mounttest
+
+The `mounttest` subcommand can be used to create files with various permissions, read files,
+and output file system type, mode, owner, and permissions for any given file.
+
+The subcommand can accept the following flags:
+
+- `fs_type`: Path to print the FS type for.
+- `file_mode`: Path to print the mode bits of.
+- `file_perm`: Path to print the perms of.
+- `file_owner`: Path to print the owning UID and GID of.
+- `new_file_0644`: Path to write to and read from with perm 0644.
+- `new_file_0666`: Path to write to and read from with perm 0666.
+- `new_file_0660`: Path to write to and read from with perm 0660.
+- `new_file_0777`: Path to write to and read from with perm 0777.
+- `file_content`: Path to read the file content from.
+- `file_content_in_loop`: Path to read the file content in loop from.
+- `retry` (default: 180): Retry time during the loop.
+- `break_on_expected_content` (default: true): Break out of loop on expected content (use with `--file_content_in_loop` flag only).
+
+Usage:
+
+```console
+    kubectl exec test-agnhost -- /agnhost mounttest \
+        [--fs_type <path>] [--file_mode <path>] [--file_perm <path>] [--file_owner <path>] \
+        [--new_file_0644 <path>] [--new_file_0666 <path>] [--new_file_0660 <path>] [--new_file_0777 <path>] \
+        [--file_content <path>] [--file_content_in_loop <path>] \
+        [--retry_time <seconds>] [--break_on_expected_content <true_or_false>]
+```
 
 
 ### net
@@ -485,6 +553,111 @@ Usage:
 [![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/test/images/porter/README.md?pixel)]()
 
 
+### resource-consumer
+
+`resource-consumer` is a subcommand which allows to generate cpu/memory utilization in a container.
+The reason why it was created is testing kubernetes autoscaling.
+
+Resource Consumer can help with autoscaling tests for:
+
+- cluster size autoscaling,
+- horizontal autoscaling of pod - changing the size of replication controller,
+- vertical autoscaling of pod - changing its resource limits.
+
+`resource-consumer` starts an HTTP server and handles sent requests. It listens on the port given as a flag (`--port`, default value: 8080).
+
+Action of consuming resources is send to the container by a POST http request. Each http request creates new process.
+Http request handler is in file `resource-consumer/resource_consumer_handler.go`.
+
+The container consumes specified amount of resources:
+
+- CPU in millicores,
+- Memory in megabytes,
+- Fake custom metrics.
+
+##### Consume CPU http request:
+
+- suffix: `ConsumeCPU`,
+- parameters: `millicores` and `durationSec`.
+
+Consumes specified amount of `millicores` for `durationSec` seconds.
+When the CPU consumption is too low, it will use the CPU by calculating `math.sqrt(0)` 10^7 times and if consumption is too high, it will sleep for 10 milliseconds.
+One replica of Resource Consumer cannot consume more that 1 cpu.
+
+##### Consume Memory http request:
+
+- suffix: `ConsumeMem`,
+- parameters: `megabytes` and `durationSec`.
+
+Consumes specified amount of `megabytes` for `durationSec` seconds.
+Request leading to consuming more memory than container limit will be ignored.
+
+##### Bump value of a fake custom metric:
+
+- suffix: `BumpMetric`,
+- parameters: `metric`, `delta` and `durationSec`.
+
+Bumps `metric` with given name by `delta` for `durationSec` seconds.
+Custom metrics in Prometheus format are exposed on `/metrics` endpoint.
+
+##### Usage:
+
+```console
+kubectl run resource-consumer --image=gcr.io/kubernetes-e2e-test-images/agnhost:2.6 \
+    --expose --service-overrides='{ "spec": { "type": "LoadBalancer" } }' --port 8080 \
+    --requests='cpu=500m,memory=256Mi -- resource-consumer'
+kubectl get services resource-consumer
+```
+
+There are two IPs. The first one is internal, while the second one is the external load-balanced IP. Both serve port `8080`. (Use the second one)
+
+```console
+curl --data "millicores=300&durationSec=600" http://<EXTERNAL-IP>:8080/ConsumeCPU
+```
+
+300 millicores will be consumed for 600 seconds.
+
+#### Use cases
+
+Cluster size autoscaling:
+
+1. Consume more resources on each node that is specified for autoscaler
+2. Observe that cluster size increased
+
+Horizontal autoscaling of pod:
+
+1. Create consuming RC and start consuming appropriate amount of resources
+2. Observe that RC has been resized
+3. Observe that usage on each replica decreased
+
+Vertical autoscaling of pod:
+
+1. Create consuming pod and start consuming appropriate amount of resources
+2. Observed that limits has been increased
+
+
+[![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/test/images/resource-consumer/README.md?pixel)]()
+
+
+### resource-consumer-controller
+
+This subcommand starts an HTTP server that spreads requests around resource consumers. The HTTP server has the same endpoints and usage as the one spawned by the ``resource-consumer`` subcommand.
+
+The subcommand can accept the following flags:
+
+- `port` (default: 8080): The port number to listen to.
+- `consumer-port` (default: 8080): Port number of consumers.
+- `consumer-service-name` (default: `resource-consumer`): Name of service containing resource consumers.
+- `consumer-service-namespace` (default: `default`): Namespace of service containing resource consumers.
+
+Usage:
+
+```console
+    kubectl exec test-agnhost -- /agnhost resource-consumer-controller \
+        [--port <port>] [--consumer-port <port>] [--consumer-service-name <service-name>] [--consumer-service-namespace <namespace>]
+```
+
+
 ### serve-hostname
 
 This is a small util app to serve your hostname on TCP and/or UDP. Useful for testing.
@@ -510,6 +683,21 @@ Usage:
 [![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/test/images/serve_hostname/README.md?pixel)]()
 
 
+### test-webserver
+
+Starts a simple HTTP fileserver which serves any file specified in the URL path, if it exists.
+
+The subcommand can accept the following flags:
+
+- `port` (default: `80`): The port number to listen to.
+
+Usage:
+
+```console
+    kubectl exec test-agnhost -- /agnhost test-webserver [--port <port>]
+```
+
+
 ### webhook (Kubernetes External Admission Webhook)
 
 The subcommand tests MutatingAdmissionWebhook and ValidatingAdmissionWebhook. After deploying
@@ -529,7 +717,7 @@ Usage:
 
 ## Other tools
 
-The image contains `iperf`, for both Windows and Linux.
+The image contains `iperf`, `curl`, `dns-tools` (including `dig`), CoreDNS.
 
 For Windows, the image is based on `busybox`, meaning that most of the Linux common tools are also
 available on it, making it possible to run most Linux commands in the `agnhost` Windows container
