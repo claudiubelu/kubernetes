@@ -62,7 +62,7 @@ curl --data "millicores=300&durationSec=600" http://<EXTERNAL-IP>:8080/ConsumeCP
 
 ## Image
 
-Docker image of Resource Consumer can be found in Google Container Registry as gcr.io/kubernetes-e2e-test-images/resource-consumer:1.7
+Docker image of Resource Consumer can be found in Google Container Registry as gcr.io/kubernetes-e2e-test-images/resource-consumer:1.4
 
 ## Use cases
 
