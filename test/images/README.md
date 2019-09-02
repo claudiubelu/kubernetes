@@ -22,7 +22,7 @@ Windows Container images are not built by default, since they cannot be built on
 that, a Windows node with Docker installed and configured for remote management is required.
 
 
-### Windows node setup
+### Windows node(s) setup
 
 In order to build the Windows container images, a node with Windows 10 or Windows Server 2019
 with the latest updates installed is required. The node will have to have Docker installed,
@@ -31,6 +31,10 @@ preferably version 18.06.0 or newer.
 Keep in mind that the Windows node might not be able to build container images for newer OS versions
 than itself (even with `--isolation=hyperv`), so keeping the node up to date and / or upgrading it
 to the latest Windows Server edition is ideal.
+
+Windows test images must be built for Windows Server 2019 (1809) and Windows Server 1903, thus,
+if the node does not have Hyper-V enabled, or it is not supported, multiple Windows nodes will required,
+one per OS version.
 
 Additionally, remote management must be configured for the node's Docker daemon. Exposing the
 Docker daemon without requiring any authentication is not recommended, and thus, it must be
@@ -64,16 +68,17 @@ az vm open-port -g GROUP-NAME -n NODE-NAME --port 2376
 ```
 
 The `ca.pem`, `cert.pem`, and `key.pem` files that can be found in `$env:USERPROFILE\.docker`
-will have to copied to the `~/.docker/` on the Linux build node:
+will have to copied to the `~/.docker-${os_version)/` on the Linux build node, where `${os_version}`
+is `1809` or `1903`.
 
 ```powershell
-scp.exe -r $env:USERPROFILE\.docker ubuntu@YOUR_LINUX_BUILD_NODE:/home/ubuntu/
+scp.exe -r $env:USERPROFILE\.docker ubuntu@YOUR_LINUX_BUILD_NODE:/home/ubuntu/.docker-$os_version
 ```
 
 After all this, the Linux build node should be able to connect to the Windows build node:
 
 ```bash
-docker --tlsverify -H "$REMOTE_DOCKER_URL" version
+docker --tlsverify --tlscacert ~/.docker-${os_version}/ca.pem --tlscert ~/.docker-${os_version}/cert.pem --tlskey ~/.docker-${os_version}/key.pem -H "$REMOTE_DOCKER_URL" version
 ```
 
 For more information and troubleshooting about enabling Docker remote management, see
@@ -145,7 +150,7 @@ In order to also include Windows Container images into the final manifest lists,
 `REMOTE_DOCKER_URL` argument will also have to be specified:
 
 ```bash
-REMOTE_DOCKER_URL=remote_docker_url REGISTRY=foo_registry make all-push WHAT=test-webserver
+REMOTE_DOCKER_URL_1903=remote_docker_url_1903 REMOTE_DOCKER_URL_1809=remote_docker_url_1809 REGISTRY=foo_registry make all-push WHAT=test-webserver
 ```
 
 *NOTE* (for test `gcr.io` image publishers): Some tests (e.g.: `should serve a basic image on each replica with a private image`)
