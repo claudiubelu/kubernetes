@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	goruntime "runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -150,7 +151,8 @@ const (
 	evictionMonitoringPeriod = time.Second * 10
 
 	// The path in containers' filesystems where the hosts file is mounted.
-	etcHostsPath = "/etc/hosts"
+	linuxEtcHostsPath   = "/etc/hosts"
+	windowsEtcHostsPath = "C:\\Windows\\System32\\drivers\\etc\\hosts"
 
 	// Capacity of the channel for receiving pod lifecycle events. This number
 	// is a bit arbitrary and may be adjusted in the future.
@@ -179,6 +181,16 @@ const (
 	// Minimum number of dead containers to keep in a pod
 	minDeadContainerInPod = 1
 )
+
+var etcHostsPath = getEtcHostsPath()
+
+func getEtcHostsPath() string {
+	if goruntime.GOOS == "windows" {
+		return windowsEtcHostsPath
+	} else {
+		return linuxEtcHostsPath
+	}
+}
 
 // SyncHandler is an interface implemented by Kubelet, for testability
 type SyncHandler interface {
