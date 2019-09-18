@@ -20,7 +20,8 @@ package main
 
 import (
 	"flag"
-	"syscall"
+	"fmt"
+	"os"
 	"time"
 
 	syswin "golang.org/x/sys/windows"
@@ -34,9 +35,10 @@ type procCPUStats struct {
 }
 
 // Retrieves the amount of CPU time this process has used since it started.
-func statsNow(handle syscall.Handle) (s procCPUStats) {
-	var processInfo syscall.Rusage
-	syscall.GetProcessTimes(handle, &processInfo.CreationTime, &processInfo.ExitTime, &processInfo.KernelTime, &processInfo.UserTime)
+func statsNow(handle syswin.Handle) (s procCPUStats) {
+	var processInfo syswin.Rusage
+	syswin.GetProcessTimes(handle, &processInfo.CreationTime, &processInfo.ExitTime, &processInfo.KernelTime, &processInfo.UserTime)
+
 	s.Time = time.Now()
 	s.User = processInfo.UserTime.Nanoseconds()
 	s.System = processInfo.KernelTime.Nanoseconds()
@@ -46,29 +48,34 @@ func statsNow(handle syscall.Handle) (s procCPUStats) {
 
 // Given stats from two time points, calculates the millicores used by this
 // process between the two samples.
-func usageNow(first procCPUStats, second procCPUStats) int64 {
-	dT := second.Time.Sub(first.Time).Nanoseconds()
-	dUsage := (second.Total - first.Total)
+func usageNow(first procCPUStats, current procCPUStats) float64 {
+	dT := current.Time.Sub(first.Time).Nanoseconds()
+	//dUser := (current.User - first.User)
 	if dT == 0 {
 		return 0
 	}
-	return 1000 * dUsage / dT
+	dUsage := (current.Total - first.Total)
+	//fmt.Println("Usage: ", dUsage / 1000000, "DT: ", dT / 1000000)
+	return float64(1000*dUsage) / float64(dT)
+	//return 1000 * dUser / dT
 }
 
 func main() {
 	flag.Parse()
-	phandle, err := syswin.GetCurrentProcess()
-	if err != nil {
-		panic(err)
-	}
-	handle := syscall.Handle(phandle)
+	pid := os.Getpid()
+	handle, _ := syswin.OpenProcess(syswin.PROCESS_QUERY_INFORMATION, false, uint32(pid))
+	defer syswin.CloseHandle(handle)
 
+	targetMillicores := float64(*millicores)
 	duration := time.Duration(*durationSec) * time.Second
+
+	fmt.Println("pid: ", pid)
+
 	start := time.Now()
 	first := statsNow(handle)
 	for time.Since(start) < duration {
 		currentMillicores := usageNow(first, statsNow(handle))
-		if currentMillicores < int64(*millicores) {
+		if currentMillicores < targetMillicores {
 			doSomething()
 		} else {
 			time.Sleep(sleep)
