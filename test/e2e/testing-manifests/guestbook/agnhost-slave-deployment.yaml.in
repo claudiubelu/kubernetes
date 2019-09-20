@@ -1,24 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis-master
+  name: agnhost-slave
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: redis
-      role: master
+      app: agnhost
+      role: slave
       tier: backend
   template:
     metadata:
       labels:
-        app: redis
-        role: master
+        app: agnhost
+        role: slave
         tier: backend
     spec:
       containers:
-      - name: master
-        image: {{.RedisImage}}
+      - name: slave
+        image: {{.AgnhostImage}}
+        args: [ "guestbook", "--slaveof", "agnhost-master", "--http-port", "6379" ]
         resources:
           requests:
             cpu: 100m
