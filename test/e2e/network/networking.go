@@ -235,5 +235,19 @@ var _ = SIGDescribe("Networking", func() {
 				e2elog.Failf("Unexpected endpoints return: %v, expect 1 endpoints", eps)
 			}
 		})
+
+		ginkgo.It("should be able to handle large requests: http", func() {
+			config := framework.NewNetworkingTestConfig(f, false)
+			ginkgo.By(fmt.Sprintf("dialing(http) %v --> %v:%v (config.clusterIP)", config.TestContainerPod.Name, config.ClusterIP, framework.ClusterHTTPPort))
+			message := strings.Repeat("42", 1000)
+			config.DialEchoFromTestContainer("http", config.ClusterIP, framework.ClusterHTTPPort, config.MaxTries, 0, message)
+		})
+
+		ginkgo.It("should be able to handle large requests: udp", func() {
+			config := framework.NewNetworkingTestConfig(f, false)
+			ginkgo.By(fmt.Sprintf("dialing(udp) %v --> %v:%v (config.clusterIP)", config.TestContainerPod.Name, config.ClusterIP, framework.ClusterUDPPort))
+			message := strings.Repeat("N"+"o", 1999)
+			config.DialEchoFromTestContainer("udp", config.ClusterIP, framework.ClusterUDPPort, config.MaxTries, 0, message)
+		})
 	})
 })

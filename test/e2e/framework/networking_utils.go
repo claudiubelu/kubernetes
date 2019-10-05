@@ -155,12 +155,20 @@ type NetworkingTestConfig struct {
 
 // DialFromEndpointContainer executes a curl via kubectl exec in an endpoint container.
 func (config *NetworkingTestConfig) DialFromEndpointContainer(protocol, targetIP string, targetPort, maxTries, minTries int, expectedEps sets.String) {
-	config.DialFromContainer(protocol, config.EndpointPods[0].Status.PodIP, targetIP, EndpointHTTPPort, targetPort, maxTries, minTries, expectedEps)
+	config.DialFromContainer(protocol, "hostname", config.EndpointPods[0].Status.PodIP, targetIP, EndpointHTTPPort, targetPort, maxTries, minTries, expectedEps)
 }
 
 // DialFromTestContainer executes a curl via kubectl exec in a test container.
 func (config *NetworkingTestConfig) DialFromTestContainer(protocol, targetIP string, targetPort, maxTries, minTries int, expectedEps sets.String) {
-	config.DialFromContainer(protocol, config.TestContainerPod.Status.PodIP, targetIP, testContainerHTTPPort, targetPort, maxTries, minTries, expectedEps)
+	config.DialFromContainer(protocol, "hostname", config.TestContainerPod.Status.PodIP, targetIP, testContainerHTTPPort, targetPort, maxTries, minTries, expectedEps)
+}
+
+// DialEchoFromTestContainer executes a curl via kubectl exec in a test container. The response is expected to match the echoMessage.
+func (config *NetworkingTestConfig) DialEchoFromTestContainer(protocol, targetIP string, targetPort, maxTries, minTries int, echoMessage string) {
+	expectedResponse := sets.NewString()
+	expectedResponse.Insert(echoMessage)
+	dialCommand := fmt.Sprintf("echo?msg=%s", echoMessage)
+	config.DialFromContainer(protocol, dialCommand, config.TestContainerPod.Status.PodIP, targetIP, testContainerHTTPPort, targetPort, maxTries, minTries, expectedResponse)
 }
 
 // diagnoseMissingEndpoints prints debug information about the endpoints that
@@ -200,18 +208,19 @@ func (config *NetworkingTestConfig) EndpointHostnames() sets.String {
 // maxTries == minTries will confirm that we see the expected endpoints and no
 // more for maxTries. Use this if you want to eg: fail a readiness check on a
 // pod and confirm it doesn't show up as an endpoint.
-func (config *NetworkingTestConfig) DialFromContainer(protocol, containerIP, targetIP string, containerHTTPPort, targetPort, maxTries, minTries int, expectedEps sets.String) {
+func (config *NetworkingTestConfig) DialFromContainer(protocol, dialCommand, containerIP, targetIP string, containerHTTPPort, targetPort, maxTries, minTries int, expectedResponses sets.String) {
 	ipPort := net.JoinHostPort(containerIP, strconv.Itoa(containerHTTPPort))
 	// The current versions of curl included in CentOS and RHEL distros
 	// misinterpret square brackets around IPv6 as globbing, so use the -g
 	// argument to disable globbing to handle the IPv6 case.
-	cmd := fmt.Sprintf("curl -g -q -s 'http://%s/dial?request=hostName&protocol=%s&host=%s&port=%d&tries=1'",
+	cmd := fmt.Sprintf("curl -g -q -s 'http://%s/dial?request=%s&protocol=%s&host=%s&port=%d&tries=1'",
 		ipPort,
+		dialCommand,
 		protocol,
 		targetIP,
 		targetPort)
 
-	eps := sets.NewString()
+	responses := sets.NewString()
 
 	for i := 0; i < maxTries; i++ {
 		stdout, stderr, err := config.f.ExecShellInPodWithFullOutput(config.HostTestContainerPod.Name, cmd)
@@ -228,25 +237,27 @@ func (config *NetworkingTestConfig) DialFromContainer(protocol, containerIP, tar
 				continue
 			}
 
-			for _, hostName := range output["responses"] {
-				trimmed := strings.TrimSpace(hostName)
+			for _, response := range output["responses"] {
+				trimmed := strings.TrimSpace(response)
 				if trimmed != "" {
-					eps.Insert(trimmed)
+					responses.Insert(trimmed)
 				}
 			}
 		}
-		Logf("Waiting for endpoints: %v", expectedEps.Difference(eps))
+		Logf("Waiting for responses: %v", expectedResponses.Difference(responses))
 
 		// Check against i+1 so we exit if minTries == maxTries.
-		if (eps.Equal(expectedEps) || eps.Len() == 0 && expectedEps.Len() == 0) && i+1 >= minTries {
+		if (responses.Equal(expectedResponses) || responses.Len() == 0 && expectedResponses.Len() == 0) && i+1 >= minTries {
 			return
 		}
 		// TODO: get rid of this delay #36281
 		time.Sleep(hitEndpointRetryDelay)
 	}
 
-	config.diagnoseMissingEndpoints(eps)
-	Failf("Failed to find expected endpoints:\nTries %d\nCommand %v\nretrieved %v\nexpected %v\n", maxTries, cmd, eps, expectedEps)
+	if dialCommand == "hostname" {
+		config.diagnoseMissingEndpoints(responses)
+	}
+	Failf("Failed to find expected responses:\nTries %d\nCommand %v\nretrieved %v\nexpected %v\n", maxTries, cmd, responses, expectedResponses)
 }
 
 // GetEndpointsFromTestContainer executes a curl via kubectl exec in a test container.

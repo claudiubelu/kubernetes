@@ -393,7 +393,7 @@ func startUDPServer(udpPort int) {
 	serverConn, err := net.ListenUDP("udp", serverAddress)
 	assertNoError(err)
 	defer serverConn.Close()
-	buf := make([]byte, 1024)
+	buf := make([]byte, 2048)
 
 	log.Printf("Started UDP server")
 	// Start responding to readiness probes.
