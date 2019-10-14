@@ -19,22 +19,43 @@ limitations under the License.
 package consumecpu
 
 import (
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/consume-cpu/consume_cpu_windows.go
 	"fmt"
 	"os"
 	"time"
+=======
+    "fmt"
+    "flag"
+    "math"
+    "os"
+    "time"
+>>>>>>> Stashed changes:test/images/resource-consumer/consume-cpu/consume_cpu_windows.go
 
-	syswin "golang.org/x/sys/windows"
+    syswin "golang.org/x/sys/windows"
 )
 
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/consume-cpu/consume_cpu_windows.go
+=======
+const sleep = 10 * time.Millisecond
+
+func doSomething() {
+    for i := 1; i < 10000000; i++ {
+        x := float64(0)
+        x += math.Sqrt(0)
+    }
+}
+
+>>>>>>> Stashed changes:test/images/resource-consumer/consume-cpu/consume_cpu_windows.go
 type procCPUStats struct {
-	User   int64     // nanoseconds spent in user mode
-	System int64     // nanoseconds spent in system mode
-	Time   time.Time // when the sample was taken
-	Total  int64     // total of all time fields (nanoseconds)
+        User   int64     // nanoseconds spent in user mode
+        System int64     // nanoseconds spent in system mode
+        Time   time.Time // when the sample was taken
+        Total  int64     // total of all time fields (nanoseconds)
 }
 
 // Retrieves the amount of CPU time this process has used since it started.
 func statsNow(handle syswin.Handle) (s procCPUStats) {
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/consume-cpu/consume_cpu_windows.go
 	var processInfo syswin.Rusage
 	syswin.GetProcessTimes(handle, &processInfo.CreationTime, &processInfo.ExitTime, &processInfo.KernelTime, &processInfo.UserTime)
 	s.Time = time.Now()
@@ -42,11 +63,22 @@ func statsNow(handle syswin.Handle) (s procCPUStats) {
 	s.System = processInfo.KernelTime.Nanoseconds()
 	s.Total = s.User + s.System
 	return s
+=======
+    var processInfo syswin.Rusage
+    syswin.GetProcessTimes(handle, &processInfo.CreationTime, &processInfo.ExitTime, &processInfo.KernelTime, &processInfo.UserTime)
+
+    s.Time = time.Now()
+    s.User = processInfo.UserTime.Nanoseconds()
+    s.System = processInfo.KernelTime.Nanoseconds()
+    s.Total = s.User + s.System
+    return s
+>>>>>>> Stashed changes:test/images/resource-consumer/consume-cpu/consume_cpu_windows.go
 }
 
 // Given stats from two time points, calculates the millicores used by this
 // process between the two samples.
 func usageNow(first procCPUStats, current procCPUStats) float64 {
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/consume-cpu/consume_cpu_windows.go
 	dT := current.Time.Sub(first.Time).Nanoseconds()
 	//dUser := (current.User - first.User)
 	if dT == 0 {
@@ -81,4 +113,47 @@ func consumeCPU() {
 			time.Sleep(sleep)
 		}
 	}
+=======
+    dT := current.Time.Sub(first.Time).Nanoseconds()
+    //dUser := (current.User - first.User)
+    if dT == 0 {
+        return 0
+    }
+    dUsage := (current.Total - first.Total)
+    //fmt.Println("Usage: ", dUsage / 1000000, "DT: ", dT / 1000000)
+    return float64(1000 * dUsage) / float64(dT)
+    //return 1000 * dUser / dT
+}
+
+var (
+    millicores  = flag.Int("millicores", 0, "millicores number")
+    durationSec = flag.Int("duration-sec", 0, "duration time in seconds")
+)
+
+func main() {
+    pid := os.Getpid()
+    handle, _ := syswin.OpenProcess(syswin.PROCESS_QUERY_INFORMATION, false, uint32(pid))
+    defer syswin.CloseHandle(handle)
+
+    flag.Parse()
+
+    targetMillicores := float64(*millicores)
+    duration := time.Duration(*durationSec) * time.Second
+
+    fmt.Println("pid: ", pid)
+
+    start := time.Now()
+    first := statsNow(handle)
+
+    for time.Since(start) < duration {
+        current := statsNow(handle)
+        currentMillicores := usageNow(first, current)
+        //fmt.Println(currentMillicores)
+        if currentMillicores < targetMillicores {
+            doSomething()
+        } else {
+            time.Sleep(sleep)
+        }
+    }
+>>>>>>> Stashed changes:test/images/resource-consumer/consume-cpu/consume_cpu_windows.go
 }

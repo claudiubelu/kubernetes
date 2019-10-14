@@ -24,15 +24,28 @@ import (
 	"strconv"
 )
 
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/utils.go
 var agnhostBinary, _ = filepath.Abs("./agnhost")
+=======
+var (
+	consumeCPUBinary, _ = filepath.Abs("./consume-cpu/consume-cpu")
+	consumeMemBinary, _ = filepath.Abs("./consume-memory/consume-memory")
+)
+>>>>>>> Stashed changes:test/images/resource-consumer/utils.go
 
 // ConsumeCPU consumes a given number of millicores for the specified duration.
 func ConsumeCPU(millicores int, durationSec int) {
 	log.Printf("ConsumeCPU millicores: %v, durationSec: %v", millicores, durationSec)
 	// creating new consume cpu process
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/utils.go
 	arg1 := fmt.Sprintf("--millicores=%d", millicores)
 	arg2 := fmt.Sprintf("--duration-sec=%d", durationSec)
 	consumeCPU := exec.Command(agnhostBinary, "consume-cpu", arg1, arg2)
+=======
+	arg1 := fmt.Sprintf("-millicores=%d", millicores)
+	arg2 := fmt.Sprintf("-duration-sec=%d", durationSec)
+	consumeCPU := exec.Command(consumeCPUBinary, arg1, arg2)
+>>>>>>> Stashed changes:test/images/resource-consumer/utils.go
 	err := consumeCPU.Run()
 	if err != nil {
 		log.Printf("Error while consuming CPU: %v", err)
@@ -45,7 +58,11 @@ func ConsumeMem(megabytes int, durationSec int) {
 	megabytesString := strconv.Itoa(megabytes) + "M"
 	durationSecString := strconv.Itoa(durationSec)
 	// creating new consume memory process
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/utils.go
 	consumeMem := exec.Command(agnhostBinary, "consume-memory", "-m", "1", "--vm-bytes", megabytesString, "--vm-hang", "0", "-t", durationSecString)
+=======
+	consumeMem := exec.Command(consumeMemBinary, "-m", "1", "--vm-bytes", megabytesString, "--vm-hang", "0", "-t", durationSecString)
+>>>>>>> Stashed changes:test/images/resource-consumer/utils.go
 	err := consumeMem.Run()
 	if err != nil {
 		log.Printf("Error while consuming memory: %v", err)

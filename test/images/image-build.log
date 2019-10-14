@@ -1,0 +1,212 @@
+./image-util.sh build sample-apiserver
+Building image for sample-apiserver OS/ARCH: linux/amd64...
+make[1]: Entering directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+docker run --rm -it -v "/home/ubuntu/kubernetes/_tmp/test-images-build.8mqBzr:/home/ubuntu/kubernetes/_tmp/test-images-build.8mqBzr:Z" k8s.gcr.io/kube-cross:v1.10.4-1 \
+	/bin/bash -c "\
+		mkdir -p /go/src /go/bin && \
+		go get -d k8s.io/sample-apiserver && \
+		cd /go/src/k8s.io/sample-apiserver && \
+		git checkout --track origin/release-1.10 && \
+		CGO_ENABLED=0 GOARM=7 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo --ldflags '-w' -o /home/ubuntu/kubernetes/_tmp/test-images-build.8mqBzr/sample-apiserver k8s.io/sample-apiserver"
+Branch release-1.10 set up to track remote branch release-1.10 from origin.
+Switched to a new branch 'release-1.10'
+make[1]: Leaving directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+~/kubernetes/_tmp/test-images-build.8mqBzr ~/kubernetes/test/images
+Sending build context to Docker daemon  39.25MB
+Step 1/3 : FROM alpine:3.8
+3.8: Pulling from library/alpine
+Digest: sha256:a4d41fa0d6bb5b1194189bab4234b1f2abfabb4728bda295f5c53d89766aa046
+Status: Image is up to date for alpine:3.8
+ ---> dac705114996
+Step 2/3 : ADD sample-apiserver /sample-apiserver
+ ---> Using cache
+ ---> 131ae61d41cb
+Step 3/3 : ENTRYPOINT ["/sample-apiserver"]
+ ---> Using cache
+ ---> ceb6f2629fa0
+Successfully built ceb6f2629fa0
+Successfully tagged claudiubelu/sample-apiserver:1.10-linux-amd64
+~/kubernetes/test/images
+Building image for sample-apiserver OS/ARCH: linux/arm...
+make[1]: Entering directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+docker run --rm -it -v "/home/ubuntu/kubernetes/_tmp/test-images-build.JoYXVL:/home/ubuntu/kubernetes/_tmp/test-images-build.JoYXVL:Z" k8s.gcr.io/kube-cross:v1.10.4-1 \
+	/bin/bash -c "\
+		mkdir -p /go/src /go/bin && \
+		go get -d k8s.io/sample-apiserver && \
+		cd /go/src/k8s.io/sample-apiserver && \
+		git checkout --track origin/release-1.10 && \
+		CGO_ENABLED=0 GOARM=7 GOOS=linux GOARCH=arm go build -a -installsuffix cgo --ldflags '-w' -o /home/ubuntu/kubernetes/_tmp/test-images-build.JoYXVL/sample-apiserver k8s.io/sample-apiserver"
+Branch release-1.10 set up to track remote branch release-1.10 from origin.
+Switched to a new branch 'release-1.10'
+make[1]: Leaving directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+~/kubernetes/_tmp/test-images-build.JoYXVL ~/kubernetes/test/images
+Sending build context to Docker daemon  33.82MB
+Step 1/3 : FROM arm32v6/alpine:3.8
+3.8: Pulling from arm32v6/alpine
+Digest: sha256:f29c3d10359dd0e6d0c11e4f715735b678c0ab03a7ac4565b4b6c08980f6213b
+Status: Image is up to date for arm32v6/alpine:3.8
+ ---> b29b4762bbaa
+Step 2/3 : ADD sample-apiserver /sample-apiserver
+ ---> Using cache
+ ---> 6d8c99a7d004
+Step 3/3 : ENTRYPOINT ["/sample-apiserver"]
+ ---> Using cache
+ ---> 881942820ae8
+Successfully built 881942820ae8
+Successfully tagged claudiubelu/sample-apiserver:1.10-linux-arm
+~/kubernetes/test/images
+Building image for sample-apiserver OS/ARCH: linux/arm64...
+make[1]: Entering directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+docker run --rm -it -v "/home/ubuntu/kubernetes/_tmp/test-images-build.wH7a6e:/home/ubuntu/kubernetes/_tmp/test-images-build.wH7a6e:Z" k8s.gcr.io/kube-cross:v1.10.4-1 \
+	/bin/bash -c "\
+		mkdir -p /go/src /go/bin && \
+		go get -d k8s.io/sample-apiserver && \
+		cd /go/src/k8s.io/sample-apiserver && \
+		git checkout --track origin/release-1.10 && \
+		CGO_ENABLED=0 GOARM=7 GOOS=linux GOARCH=arm64 go build -a -installsuffix cgo --ldflags '-w' -o /home/ubuntu/kubernetes/_tmp/test-images-build.wH7a6e/sample-apiserver k8s.io/sample-apiserver"
+Branch release-1.10 set up to track remote branch release-1.10 from origin.
+Switched to a new branch 'release-1.10'
+make[1]: Leaving directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+~/kubernetes/_tmp/test-images-build.wH7a6e ~/kubernetes/test/images
+Sending build context to Docker daemon   37.4MB
+Step 1/3 : FROM arm64v8/alpine:3.8
+3.8: Pulling from arm64v8/alpine
+Digest: sha256:8b6c1be86a1db601aedc7512d682ebe9a1522b7a89e93b3f9c19a8e0707b3cf4
+Status: Image is up to date for arm64v8/alpine:3.8
+ ---> 91f7ef093236
+Step 2/3 : ADD sample-apiserver /sample-apiserver
+ ---> Using cache
+ ---> ab9fa0a3907d
+Step 3/3 : ENTRYPOINT ["/sample-apiserver"]
+ ---> Using cache
+ ---> a577ca83bdb8
+Successfully built a577ca83bdb8
+Successfully tagged claudiubelu/sample-apiserver:1.10-linux-arm64
+~/kubernetes/test/images
+Building image for sample-apiserver OS/ARCH: linux/ppc64le...
+make[1]: Entering directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+docker run --rm -it -v "/home/ubuntu/kubernetes/_tmp/test-images-build.513om7:/home/ubuntu/kubernetes/_tmp/test-images-build.513om7:Z" k8s.gcr.io/kube-cross:v1.10.4-1 \
+	/bin/bash -c "\
+		mkdir -p /go/src /go/bin && \
+		go get -d k8s.io/sample-apiserver && \
+		cd /go/src/k8s.io/sample-apiserver && \
+		git checkout --track origin/release-1.10 && \
+		CGO_ENABLED=0 GOARM=7 GOOS=linux GOARCH=ppc64le go build -a -installsuffix cgo --ldflags '-w' -o /home/ubuntu/kubernetes/_tmp/test-images-build.513om7/sample-apiserver k8s.io/sample-apiserver"
+Branch release-1.10 set up to track remote branch release-1.10 from origin.
+Switched to a new branch 'release-1.10'
+make[1]: Leaving directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+~/kubernetes/_tmp/test-images-build.513om7 ~/kubernetes/test/images
+Sending build context to Docker daemon  38.46MB
+Step 1/3 : FROM ppc64le/alpine:3.8
+3.8: Pulling from ppc64le/alpine
+Digest: sha256:dc2b87f7df64e5f233311433834573da1d36d6cba72072eff1fa5f985de873cd
+Status: Image is up to date for ppc64le/alpine:3.8
+ ---> 55099a70c2c6
+Step 2/3 : ADD sample-apiserver /sample-apiserver
+ ---> Using cache
+ ---> 1a643e5da5fd
+Step 3/3 : ENTRYPOINT ["/sample-apiserver"]
+ ---> Using cache
+ ---> f458e5386e6a
+Successfully built f458e5386e6a
+Successfully tagged claudiubelu/sample-apiserver:1.10-linux-ppc64le
+~/kubernetes/test/images
+Building image for sample-apiserver OS/ARCH: linux/s390x...
+make[1]: Entering directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+docker run --rm -it -v "/home/ubuntu/kubernetes/_tmp/test-images-build.RqR2ig:/home/ubuntu/kubernetes/_tmp/test-images-build.RqR2ig:Z" k8s.gcr.io/kube-cross:v1.10.4-1 \
+	/bin/bash -c "\
+		mkdir -p /go/src /go/bin && \
+		go get -d k8s.io/sample-apiserver && \
+		cd /go/src/k8s.io/sample-apiserver && \
+		git checkout --track origin/release-1.10 && \
+		CGO_ENABLED=0 GOARM=7 GOOS=linux GOARCH=s390x go build -a -installsuffix cgo --ldflags '-w' -o /home/ubuntu/kubernetes/_tmp/test-images-build.RqR2ig/sample-apiserver k8s.io/sample-apiserver"
+Branch release-1.10 set up to track remote branch release-1.10 from origin.
+Switched to a new branch 'release-1.10'
+make[1]: Leaving directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+~/kubernetes/_tmp/test-images-build.RqR2ig ~/kubernetes/test/images
+Sending build context to Docker daemon  39.85MB
+Step 1/3 : FROM s390x/alpine:3.8
+3.8: Pulling from s390x/alpine
+Digest: sha256:4446f81140f30b7041ac1984e8cb1fcab2b50357ccf67780147505ef4a136c89
+Status: Image is up to date for s390x/alpine:3.8
+ ---> 59116dcabf14
+Step 2/3 : ADD sample-apiserver /sample-apiserver
+ ---> Using cache
+ ---> fae915591065
+Step 3/3 : ENTRYPOINT ["/sample-apiserver"]
+ ---> Using cache
+ ---> b547aae42b31
+Successfully built b547aae42b31
+Successfully tagged claudiubelu/sample-apiserver:1.10-linux-s390x
+~/kubernetes/test/images
+Building image for sample-apiserver OS/ARCH: windows/amd64...
+make[1]: Entering directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+docker run --rm -it -v "/home/ubuntu/kubernetes/_tmp/test-images-build.jkBRGe:/home/ubuntu/kubernetes/_tmp/test-images-build.jkBRGe:Z" k8s.gcr.io/kube-cross:v1.10.4-1 \
+	/bin/bash -c "\
+		mkdir -p /go/src /go/bin && \
+		go get -d k8s.io/sample-apiserver && \
+		cd /go/src/k8s.io/sample-apiserver && \
+		git checkout --track origin/release-1.10 && \
+		CGO_ENABLED=0 GOARM=7 GOOS=windows GOARCH=amd64 go build -a -installsuffix cgo --ldflags '-w' -o /home/ubuntu/kubernetes/_tmp/test-images-build.jkBRGe/sample-apiserver k8s.io/sample-apiserver"
+Branch release-1.10 set up to track remote branch release-1.10 from origin.
+Switched to a new branch 'release-1.10'
+make[1]: Leaving directory '/home/ubuntu/kubernetes/test/images/sample-apiserver'
+~/kubernetes/_tmp/test-images-build.jkBRGe ~/kubernetes/test/images
+Sending build context to Docker daemon  39.24MB
+Step 1/3 : FROM other-image
+ltsc2019: Pulling from windows/servercore
+Digest: sha256:7afc10568a79ffbaf11dfc70b13937ca8bec419fb2d408499f4568f40fae3e61
+Status: Image is up to date for other-image
+ ---> 954d1507112f
+Step 2/3 : ADD sample-apiserver /sample-apiserver
+ ---> Using cache
+ ---> 65ed6203887f
+Step 3/3 : ENTRYPOINT ["/sample-apiserver"]
+ ---> Using cache
+ ---> ceb3a777345c
+Successfully built ceb3a777345c
+Successfully tagged claudiubelu/sample-apiserver:1.10-windows-amd64
+~/kubernetes/test/images
+./image-util.sh push sample-apiserver
+The push refers to repository [docker.io/claudiubelu/sample-apiserver]
+79eb89648923: Preparing
+d9ff549177a9: Preparing
+d9ff549177a9: Layer already exists
+79eb89648923: Layer already exists
+1.10-linux-amd64: digest: sha256:862d2c7d20612b4c851242a8d564c9d76ce30e8d2850af61d142a83a41a5cc00 size: 740
+The push refers to repository [docker.io/claudiubelu/sample-apiserver]
+dab62965d860: Preparing
+5826482cf200: Preparing
+5826482cf200: Layer already exists
+dab62965d860: Layer already exists
+1.10-linux-arm: digest: sha256:46d9b8bef87a5d33565c155ae772fb88d4f4312d42781416abf931656c1504fb size: 740
+The push refers to repository [docker.io/claudiubelu/sample-apiserver]
+171b92a74fb4: Preparing
+11ef7eb92407: Preparing
+11ef7eb92407: Layer already exists
+171b92a74fb4: Layer already exists
+1.10-linux-arm64: digest: sha256:d28b9be56a580fe079143a9c7b26e8342524eb3316f3b03354425383e8061231 size: 739
+The push refers to repository [docker.io/claudiubelu/sample-apiserver]
+fdacc7dae577: Preparing
+c90acc73c11e: Preparing
+fdacc7dae577: Layer already exists
+c90acc73c11e: Layer already exists
+1.10-linux-ppc64le: digest: sha256:acc6ab0956e563bc8eddda08f2586f47f19da6d525a12e3116be135a82b4e41b size: 739
+The push refers to repository [docker.io/claudiubelu/sample-apiserver]
+021ded9fbdbd: Preparing
+948329230314: Preparing
+948329230314: Layer already exists
+021ded9fbdbd: Layer already exists
+1.10-linux-s390x: digest: sha256:9c42ef4dfe90a768eca4852bcb48b14923611ec9f8371b1904f90873d67cbe93 size: 740
+The push refers to repository [docker.io/claudiubelu/sample-apiserver]
+b381e28ca1d6: Preparing
+7f0a3abe6cb3: Preparing
+32f4e3c8934d: Preparing
+c4d02418787d: Preparing
+32f4e3c8934d: Skipped foreign layer
+c4d02418787d: Skipped foreign layer
+b381e28ca1d6: Layer already exists
+7f0a3abe6cb3: Layer already exists
+1.10-windows-amd64: digest: sha256:01962d913e3928c88d66a48aea57742440ea55f623f42c3658213eb5464a7308 size: 1366
+Created manifest list docker.io/claudiubelu/sample-apiserver:1.10
+sha256:74a5dcd16e10ff3702f77075be609571e2f28e515b8e6c3887824c083d64514d

@@ -138,9 +138,13 @@ build() {
       # The node requires TLS authentication, and thus it is expected that the
       # ca.pem, cert.pem, key.pem files can be found in the ${HOME}/.docker-${os_version} folder.
       # TODO(claudiub): add "build --isolation=hyperv" once GCE introduces Hyper-V support.
+<<<<<<< Updated upstream
       docker --tlsverify --tlscacert "${HOME}/.docker-${os_version}/ca.pem" \
         --tlscert "${HOME}/.docker-${os_version}/cert.pem" --tlskey "${HOME}/.docker-${os_version}/key.pem" \
         -H "${REMOTE_DOCKER_URL}" build -t "${REGISTRY}/${IMAGE_NAME}:${TAG}-${os_name}-${arch}-${os_version}" -f $dockerfile_name .
+=======
+      docker --tlsverify --tlscacert ~/.docker-${os_version}/ca.pem --tlscert ~/.docker-${os_version}/cert.pem --tlskey ~/.docker-${os_version}/key.pem -H "${REMOTE_DOCKER_URL}" build -t "${REGISTRY}/${IMAGE_NAME}:${TAG}-${os_name}-${arch}-${os_version}" -f $dockerfile_name .
+>>>>>>> Stashed changes
     else
       echo "Cannot build the image '${IMAGE}' for ${os_arch}. REMOTE_DOCKER_URL_$os_version should be set, containing the URL to a Windows docker daemon."
     fi
