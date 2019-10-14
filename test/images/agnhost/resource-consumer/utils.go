@@ -25,8 +25,11 @@ import (
 )
 
 <<<<<<< Updated upstream:test/images/agnhost/resource-consumer/utils.go
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/utils.go
 var agnhostBinary, _ = filepath.Abs("./agnhost")
 =======
+=======
+>>>>>>> Stashed changes:test/images/resource-consumer/utils.go
 var (
 	consumeCPUBinary, _ = filepath.Abs("./consume-cpu/consume-cpu")
 	consumeMemBinary, _ = filepath.Abs("./consume-memory/consume-memory")
@@ -45,6 +48,9 @@ func ConsumeCPU(millicores int, durationSec int) {
 	arg1 := fmt.Sprintf("-millicores=%d", millicores)
 	arg2 := fmt.Sprintf("-duration-sec=%d", durationSec)
 	consumeCPU := exec.Command(consumeCPUBinary, arg1, arg2)
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/utils.go
+>>>>>>> Stashed changes:test/images/resource-consumer/utils.go
+=======
 >>>>>>> Stashed changes:test/images/resource-consumer/utils.go
 	err := consumeCPU.Run()
 	if err != nil {
@@ -62,6 +68,9 @@ func ConsumeMem(megabytes int, durationSec int) {
 	consumeMem := exec.Command(agnhostBinary, "consume-memory", "-m", "1", "--vm-bytes", megabytesString, "--vm-hang", "0", "-t", durationSecString)
 =======
 	consumeMem := exec.Command(consumeMemBinary, "-m", "1", "--vm-bytes", megabytesString, "--vm-hang", "0", "-t", durationSecString)
+<<<<<<< Updated upstream:test/images/agnhost/resource-consumer/utils.go
+>>>>>>> Stashed changes:test/images/resource-consumer/utils.go
+=======
 >>>>>>> Stashed changes:test/images/resource-consumer/utils.go
 	err := consumeMem.Run()
 	if err != nil {
