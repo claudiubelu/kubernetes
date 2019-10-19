@@ -16,7 +16,8 @@ FROM BASEIMAGE
 
 CROSS_BUILD_COPY qemu-QEMUARCH-static /usr/bin/
 
-RUN apk add --no-cache openssl nginx-mod-http-lua nginx-mod-http-lua-upstream
+# bash is needed in order for the s390x image
+RUN apk add --no-cache bash openssl nginx-mod-http-lua nginx-mod-http-lua-upstream
 RUN mkdir -p /run/nginx
 
 ADD nginx.conf /etc/nginx/nginx.conf
