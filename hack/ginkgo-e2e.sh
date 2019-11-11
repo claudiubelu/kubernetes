@@ -125,12 +125,18 @@ if [[ -n "${CONFORMANCE_TEST_SKIP_REGEX:-}" ]]; then
   ginkgo_args+=("--skip=${CONFORMANCE_TEST_SKIP_REGEX}")
   ginkgo_args+=("--seed=1436380640")
 fi
+if [[ -n "${CONFORMANCE_TEST_FOCUS_REGEX:-}" ]]; then
+  ginkgo_args+=("--focus=${CONFORMANCE_TEST_FOCUS_REGEX}")
+fi
 if [[ -n "${GINKGO_PARALLEL_NODES:-}" ]]; then
   ginkgo_args+=("--nodes=${GINKGO_PARALLEL_NODES}")
 elif [[ ${GINKGO_PARALLEL} =~ ^[yY]$ ]]; then
   ginkgo_args+=("--nodes=25")
 fi
 
+if [[ "${GINKGO_DRYRUN:-}" == true ]]; then
+  ginkgo_args+=("--dryRun=true")
+fi
 if [[ "${GINKGO_UNTIL_IT_FAILS:-}" == true ]]; then
   ginkgo_args+=("--untilItFails=true")
 fi
@@ -167,6 +173,7 @@ export PATH
   --cloud-config-file="${CLOUD_CONFIG:-}" \
   --repo-root="${KUBE_ROOT}" \
   --node-instance-group="${NODE_INSTANCE_GROUP:-}" \
+  --node-os-distro="${NODE_OS_DISTRO:-debian}" \
   --prefix="${KUBE_GCE_INSTANCE_PREFIX:-e2e}" \
   --network="${KUBE_GCE_NETWORK:-${KUBE_GKE_NETWORK:-e2e}}" \
   --node-tag="${NODE_TAG:-}" \
