@@ -276,6 +276,11 @@ if [[ "${WHAT}" == "all-conformance" ]]; then
   for image in "${conformance_images[@]}"; do
     eval "${TASK}" "${image}"
   done
+elif [[ "${WHAT}" == "all-nonconformance" ]]; then
+  images=("apparmor-loader" "etcd" "httpd" "httpd-new" "ipc-utils" "nginx" "nginx-new" "nonroot" "pause" "redis")
+  for image in "${images[@]}"; do
+    eval "${TASK}" "${image}"
+  done
 else
   eval "${TASK}" "$@"
 fi
