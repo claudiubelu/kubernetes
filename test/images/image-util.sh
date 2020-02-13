@@ -142,7 +142,7 @@ build() {
       # TODO(claudiub): add "build --isolation=hyperv" once GCE introduces Hyper-V support.
       docker --tlsverify --tlscacert "${HOME}/.docker-${os_version}/ca.pem" \
         --tlscert "${HOME}/.docker-${os_version}/cert.pem" --tlskey "${HOME}/.docker-${os_version}/key.pem" \
-        -H "${REMOTE_DOCKER_URL}" build --pull -t "${REGISTRY}/${image_name}:${TAG}-${os_name}-${arch}-${os_version}" \
+        -H "${REMOTE_DOCKER_URL}" build --no-cache --pull -t "${REGISTRY}/${image_name}:${TAG}-${os_name}-${arch}-${os_version}" \
         --build-arg BASEIMAGE="${BASEIMAGE}" -f $dockerfile_name .
     else
       echo "Cannot build the image '${image}' for ${os_arch}. REMOTE_DOCKER_URL_$os_version should be set, containing the URL to a Windows docker daemon."

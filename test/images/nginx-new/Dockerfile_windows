@@ -15,14 +15,14 @@
 ARG BASEIMAGE
 FROM $BASEIMAGE
 
-RUN mkdir c:\build\nginx\source &&\
-    powershell -Command "wget -uri 'http://nginx.org/download/nginx-1.15.12.zip' -OutFile 'c:\nginx.zip'" &&\
-    powershell -Command "Expand-Archive -Path C:\nginx.zip -DestinationPath C:\nginx -Force" &&\
-    del c:\nginx.zip
 USER ContainerAdministrator
+RUN mkdir c:\build\nginx\source &&\
+    curl -L http://nginx.org/download/nginx-1.15.2.zip -o nginx.zip &\
+    tar -xf nginx.zip &\
+    del c:\nginx.zip
 RUN mkdir C:\usr\share &&\
-    mklink /D C:\usr\share\nginx C:\nginx\nginx-1.15.12 &&\
+    mklink /D C:\usr\share\nginx C:\nginx-1.15.2 &&\
     mklink C:\Windows\System32\sync.exe C:\Windows\System32\SyncHost.exe
-WORKDIR /nginx/nginx-1.15.12
+WORKDIR /nginx-1.15.2
 EXPOSE 80
 ENTRYPOINT ["nginx.exe"]

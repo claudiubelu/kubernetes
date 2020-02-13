@@ -15,8 +15,11 @@
 ARG BASEIMAGE
 FROM $BASEIMAGE
 
-ADD https://github.com/etcd-io/etcd/releases/download/v3.4.3/etcd-v3.4.3-windows-amd64.zip /etcd-windows-amd64.zip
-RUN powershell -Command "Expand-Archive -Path C:\etcd-windows-amd64.zip -DestinationPath C:\usr\local -Force ;\
-    Rename-Item -Path C:\usr\local\etcd-v3.4.3-windows-amd64 -NewName C:\usr\local\bin" &&\
-del C:\etcd-windows-amd64.zip
+RUN mkdir C:\usr\local\ &\
+    cd C:\usr\local &\
+    curl -L "https://github.com/etcd-io/etcd/releases/download/v3.4.3/etcd-v3.4.3-windows-amd64.zip" -o etcd-windows-amd64.zip &\
+    tar -xf etcd-windows-amd64.zip &\
+    move etcd-v3.4.3-windows-amd64 bin &\
+    del etcd-windows-amd64.zip
+
 ENTRYPOINT ["/usr/local/bin/etcd.exe"]
