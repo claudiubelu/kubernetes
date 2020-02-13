@@ -1,4 +1,4 @@
-# Copyright 2019 The Kubernetes Authors.
+# Copyright 2020 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The e2e aggregator test is designed to test ability to run sample-apiserver as an aggregated server.
+# see e2e test named "Should be able to support the 1.17 Sample API Server using the current Aggregator"
+
 ARG BASEIMAGE
 FROM claudiubelu/windows-image-builder-helper:1.0 as helper
 FROM $BASEIMAGE
 
 COPY --from=helper /Windows/System32/netapi32.dll /Windows/System32/netapi32.dll
+ADD sample-apiserver /sample-apiserver.exe
 
-RUN mkdir C:\usr\local\ &\
-    cd C:\usr\local &\
-    curl -L "https://github.com/etcd-io/etcd/releases/download/v3.4.7/etcd-v3.4.7-windows-amd64.zip" -o etcd-windows-amd64.zip &\
-    tar -xf etcd-windows-amd64.zip &\
-    move etcd-v3.4.7-windows-amd64 C:\usr\local\bin &\
-    del etcd-windows-amd64.zip
-
-ENTRYPOINT ["/usr/local/bin/etcd.exe"]
+ENTRYPOINT ["/sample-apiserver.exe"]

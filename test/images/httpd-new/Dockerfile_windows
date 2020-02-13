@@ -13,25 +13,24 @@
 # limitations under the License.
 
 ARG BASEIMAGE
+FROM claudiubelu/windows-image-builder-helper:1.0 as helper
+
+RUN choco install apache-httpd --version 2.4.39 -y &\
+    choco install php --version 7.2.14 -y --params '"/ThreadSafe "'
+
 FROM $BASEIMAGE
 
-ENV chocolateyUseWindowsCompression false
-RUN powershell -Command \
-    Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')); \
-    choco feature disable --name showDownloadProgress
-RUN powershell -Command \
-    choco install apache-httpd --version 2.4.39 -y; \
-    choco install php --version 7.2.14 -y --params '"/ThreadSafe "'
-RUN powershell -Command \
-    $oldpath = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment" -Name PATH).path; \
-    $newpath = "$oldpath;C:\tools\php72\;C:\Users\ContainerAdministrator\AppData\Roaming\Apache24\bin\\"; \
-    Set-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment" -Name PATH -Value $newPath
-RUN mkdir C:\usr\local &&\
-    mklink /D C:\usr\local\apache2 C:\Users\ContainerAdministrator\AppData\Roaming\Apache24
+COPY --from=helper /Windows/System32/vcruntime140.dll /Windows/System32/
+COPY --from=helper /Users/ContainerAdministrator/AppData/Roaming/Apache24 /Users/ContainerAdministrator/AppData/Roaming/Apache24
+COPY --from=helper /tools/php72 /tools/php72
 
 COPY httpd.conf /Users/ContainerAdministrator/AppData/Roaming/Apache24/conf/httpd.conf
 COPY index.html /Users/ContainerAdministrator/AppData/Roaming/Apache24/htdocs/index.html
 
-EXPOSE 80
 USER ContainerAdministrator
+RUN setx /M PATH "%PATH%;C:\tools\php72\;C:\Users\ContainerAdministrator\AppData\Roaming\Apache24\bin\;" &\
+    mkdir C:\usr\local &\
+    mklink /D C:\usr\local\apache2 C:\Users\ContainerAdministrator\AppData\Roaming\Apache24
+
+EXPOSE 80
 ENTRYPOINT ["C:/Users/ContainerAdministrator/AppData/Roaming/Apache24/bin/httpd.exe"]

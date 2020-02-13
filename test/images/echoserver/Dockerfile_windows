@@ -13,19 +13,21 @@
 # limitations under the License.
 
 ARG BASEIMAGE
-FROM $BASEIMAGE
+FROM claudiubelu/windows-image-builder-helper:1.0 as helper
 
-RUN powershell -Command "wget -uri 'https://openresty.org/download/openresty-1.13.6.2-win64.zip' -OutFile 'C:\openresty-1.13.6.2-win64.zip'; \
+RUN powershell -Command "curl.exe -L 'https://openresty.org/download/openresty-1.13.6.2-win64.zip' -o 'C:\openresty-1.13.6.2-win64.zip'; \
     Expand-Archive -Path C:\openresty-1.13.6.2-win64.zip -DestinationPath C:\openresty -Force; \
     Remove-Item 'C:\openresty-1.13.6.2-win64.zip'"
+RUN choco install openssl.light -y
+
+FROM $BASEIMAGE
+
+COPY --from=helper /openresty /openresty
+COPY --from=helper /Windows/System32/vcruntime140.dll /Windows/System32/
+COPY --from=helper ["C:/Program Files/OpenSSL", "C:/Program Files/"]
 
 USER ContainerAdministrator
 RUN setx /M PATH "C:\openresty\openresty-1.13.6.2-win64\;%PATH%"
-ENV chocolateyUseWindowsCompression false
-RUN powershell -Command \
-    iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1')); \
-    choco feature disable --name showDownloadProgress; \
-    choco install openssl.light -y
 USER ContainerUser
 
 ADD run.sh /openresty/openresty-1.13.6.2-win64/run.sh

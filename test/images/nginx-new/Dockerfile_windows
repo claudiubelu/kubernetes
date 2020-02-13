@@ -13,16 +13,17 @@
 # limitations under the License.
 
 ARG BASEIMAGE
+
+FROM claudiubelu/nginx:1.19.2 as helper
 FROM $BASEIMAGE
 
-RUN mkdir C:\build\nginx\source &&\
-    powershell -Command "wget -uri 'http://nginx.org/download/nginx-1.15.12.zip' -OutFile 'C:\nginx.zip'" &&\
-    powershell -Command "Expand-Archive -Path C:\nginx.zip -DestinationPath C:\nginx -Force" &&\
-    del C:\nginx.zip
+COPY --from=helper /nginx /nginx
+
 USER ContainerAdministrator
 RUN mkdir C:\usr\share &&\
-    mklink /D C:\usr\share\nginx C:\nginx\nginx-1.15.12 &&\
+    mklink /D C:\usr\share\nginx C:\nginx &&\
     mklink C:\Windows\System32\sync.exe C:\Windows\System32\SyncHost.exe
-WORKDIR /nginx/nginx-1.15.12
+
+WORKDIR /nginx/
 EXPOSE 80
 ENTRYPOINT ["nginx.exe"]
