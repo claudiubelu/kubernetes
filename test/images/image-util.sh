@@ -157,7 +157,7 @@ build() {
     fi
 
     if [[ "$os_name" = "linux" ]]; then
-      docker build --pull -t "${REGISTRY}/${image}:${TAG}-${os_name}-${arch}" --build-arg BASEIMAGE="${BASEIMAGE}" .
+      docker build --pull --no-cache -t "${REGISTRY}/${image}:${TAG}-${os_name}-${arch}" --build-arg BASEIMAGE="${BASEIMAGE}" .
     elif [[ -n "${REMOTE_DOCKER_URL:-}" ]]; then
       # NOTE(claudiub): We're using a remote Windows node to build the Windows Docker images.
       # The node requires TLS authentication, and thus it is expected that the

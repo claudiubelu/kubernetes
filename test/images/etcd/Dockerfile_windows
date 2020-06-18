@@ -20,9 +20,9 @@ COPY --from=helper /Windows/System32/netapi32.dll /Windows/System32/netapi32.dll
 
 RUN mkdir C:\usr\local\ &\
     cd C:\usr\local &\
-    curl -L "https://github.com/etcd-io/etcd/releases/download/v3.4.7/etcd-v3.4.7-windows-amd64.zip" -o etcd-windows-amd64.zip &\
+    curl -L "https://github.com/etcd-io/etcd/releases/download/v3.4.9/etcd-v3.4.9-windows-amd64.zip" -o etcd-windows-amd64.zip &\
     tar -xf etcd-windows-amd64.zip &\
-    move etcd-v3.4.7-windows-amd64 C:\usr\local\bin &\
+    move etcd-v3.4.9-windows-amd64 C:\usr\local\bin &\
     del etcd-windows-amd64.zip
 
 ENTRYPOINT ["/usr/local/bin/etcd.exe"]
