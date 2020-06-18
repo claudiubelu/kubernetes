@@ -6,3 +6,4 @@ linux/s390x=REGISTRY/agnhost:2.20-linux-s390x
 windows/amd64/1809=REGISTRY/agnhost:2.20-windows-amd64-1809
 windows/amd64/1903=REGISTRY/agnhost:2.20-windows-amd64-1903
 windows/amd64/1909=REGISTRY/agnhost:2.20-windows-amd64-1909
+windows/amd64/2004=REGISTRY/agnhost:2.20-windows-amd64-2004
