@@ -21,11 +21,13 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"sync"
 
 	"github.com/spf13/cobra"
 
+	"k8s.io/kubernetes/test/images/agnhost/dns"
 	"k8s.io/kubernetes/test/images/resource-consumer/common"
 )
 
@@ -43,7 +45,27 @@ var (
 	consumerPort             int
 	consumerServiceName      string
 	consumerServiceNamespace string
+	dnsDomain                string
 )
+
+func getDNSDomain() string {
+	if dnsDomain != "" {
+		return dnsDomain
+	}
+	dnsSuffixList := dns.GetDNSSuffixList()
+	r, _ := regexp.Compile("^svc.")
+	for _, currentDNSSuffix := range dnsSuffixList {
+		if r.MatchString(currentDNSSuffix) {
+			// Save DNS suffix without the 'svc.' part
+			dnsDomain = currentDNSSuffix[4:]
+			break
+		}
+	}
+	if dnsDomain == "" {
+		panic("Could not find DNS suffix starting with 'svc.' substring")
+	}
+	return dnsDomain
+}
 
 func init() {
 	CmdResourceConsumerController.Flags().IntVar(&port, "port", 8080, "Port number.")
@@ -214,7 +236,7 @@ func (c *controller) sendConsumeCustomMetric(w http.ResponseWriter, metric strin
 }
 
 func createConsumerURL(suffix string) string {
-	return fmt.Sprintf("http://%s.%s.svc.cluster.local:%d%s", consumerServiceName, consumerServiceNamespace, consumerPort, suffix)
+	return fmt.Sprintf("http://%s.%s.svc.%s:%d%s", consumerServiceName, consumerServiceNamespace, getDNSDomain(), consumerPort, suffix)
 }
 
 // sendOneConsumeCPURequest sends POST request for cpu consumption

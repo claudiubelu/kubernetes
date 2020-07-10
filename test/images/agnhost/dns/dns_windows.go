@@ -24,15 +24,6 @@ import (
 
 const etcHostsFile = "C:/Windows/System32/drivers/etc/hosts"
 
-func getDNSSuffixList() []string {
-	output := runCommand("powershell", "-Command", "(Get-DnsClient)[0].SuffixSearchList")
-	if len(output) > 0 {
-		return strings.Split(output, "\r\n")
-	}
-
-	panic("Could not find DNS search list!")
-}
-
 func getDNSServerList() []string {
 	output := runCommand("powershell", "-Command", "(Get-DnsClientServerAddress).ServerAddresses")
 	if len(output) > 0 {
@@ -42,15 +33,19 @@ func getDNSServerList() []string {
 	panic("Could not find DNS Server list!")
 }
 
-func runCommand(name string, arg ...string) string {
-	var out bytes.Buffer
-	cmd := exec.Command(name, arg...)
-	cmd.Stdout = &out
+// GetDNSSuffixList reads DNS config file and returns the list of configured DNS suffixes
+func GetDNSSuffixList() []string {
+	// We start with the general suffix list that apply to all network connections.
+	allSuffixes := []string{}
+	suffixes := getRegistryValue(netRegistry, "SearchList")
+	if suffixes != "" {
+		allSuffixes = strings.Split(suffixes, ",")
+	}
 
-	err := cmd.Run()
+	// Then we append the network-specific DNS suffix lists.
+	regKey, err := registry.OpenKey(registry.LOCAL_MACHINE, netIfacesRegistry, registry.ENUMERATE_SUB_KEYS)
 	if err != nil {
 		panic(err)
 	}
-
-	return strings.TrimSpace(out.String())
+	defer regKey.Close()
 }
