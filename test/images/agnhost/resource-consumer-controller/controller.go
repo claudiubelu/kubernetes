@@ -49,7 +49,7 @@ var (
 	dnsDomain                string
 )
 
-func getDnsDomain() string {
+func getDNSDomain() string {
 	if dnsDomain != "" {
 		return dnsDomain
 	}
@@ -57,11 +57,11 @@ func getDnsDomain() string {
 	if err != nil {
 		panic(err)
 	}
-	for _, currentDnsSuffix := range strings.Split(string(dnsSuffixList), ",") {
-		matched, _ := regexp.MatchString("^svc.", currentDnsSuffix)
-		if matched {
+	r, _ := regexp.Compile("^svc.")
+	for _, currentDNSSuffix := range strings.Split(string(dnsSuffixList), ",") {
+		if r.MatchString(currentDNSSuffix) {
 			// Save DNS suffix without the 'svc.' part
-			dnsDomain = currentDnsSuffix[4:]
+			dnsDomain = currentDNSSuffix[4:]
 			break
 		}
 	}
@@ -240,7 +240,7 @@ func (c *controller) sendConsumeCustomMetric(w http.ResponseWriter, metric strin
 }
 
 func createConsumerURL(suffix string) string {
-	return fmt.Sprintf("http://%s.%s.svc.%s:%d%s", consumerServiceName, consumerServiceNamespace, getDnsDomain(), consumerPort, suffix)
+	return fmt.Sprintf("http://%s.%s.svc.%s:%d%s", consumerServiceName, consumerServiceNamespace, getDNSDomain(), consumerPort, suffix)
 }
 
 // sendOneConsumeCPURequest sends POST request for cpu consumption
