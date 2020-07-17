@@ -78,7 +78,7 @@ func getRegistryValue(reg, key string) string {
 	return regValue
 }
 
-func getDNSSuffixList() []string {
+func GetDNSSuffixList() []string {
 	// We start with the general suffix list that apply to all network connections.
 	allSuffixes := []string{}
 	suffixes := getRegistryValue(netRegistry, "SearchList")

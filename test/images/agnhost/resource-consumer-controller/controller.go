@@ -21,14 +21,13 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os/exec"
 	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/spf13/cobra"
 
+	"k8s.io/kubernetes/test/images/agnhost/dns"
 	"k8s.io/kubernetes/test/images/resource-consumer/common"
 )
 
@@ -53,12 +52,9 @@ func getDNSDomain() string {
 	if dnsDomain != "" {
 		return dnsDomain
 	}
-	dnsSuffixList, err := exec.Command("/agnhost", "dns-suffix").Output()
-	if err != nil {
-		panic(err)
-	}
+	dnsSuffixList := dns.GetDNSSuffixList()
 	r, _ := regexp.Compile("^svc.")
-	for _, currentDNSSuffix := range strings.Split(string(dnsSuffixList), ",") {
+	for _, currentDNSSuffix := range dnsSuffixList {
 		if r.MatchString(currentDNSSuffix) {
 			// Save DNS suffix without the 'svc.' part
 			dnsDomain = currentDNSSuffix[4:]
