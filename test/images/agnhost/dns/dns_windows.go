@@ -55,6 +55,63 @@ var (
 	procGetNetworkParams = iphlpapidll.MustFindProc("GetNetworkParams")
 )
 
+func elemInList(elem string, list []string) bool {
+    for _, e := range list {
+        if e == elem {
+            return true
+        }
+    }
+    return false
+}
+
+func getRegistryValue(reg, key string) string {
+	regKey, err := registry.OpenKey(registry.LOCAL_MACHINE, reg, registry.QUERY_VALUE)
+	if err != nil {
+		return ""
+	}
+	defer regKey.Close()
+
+	regValue, _, err := regKey.GetStringValue(key)
+	if err != nil {
+		return ""
+	}
+	return regValue
+}
+
+func GetDNSSuffixList() []string {
+	// We start with the general suffix list that apply to all network connections.
+	allSuffixes := []string{}
+	suffixes := getRegistryValue(netRegistry, "SearchList")
+	if suffixes != "" {
+		allSuffixes = strings.Split(suffixes, ",")
+	}
+
+	// Then we append the network-specific DNS suffix lists.
+	regKey, err := registry.OpenKey(registry.LOCAL_MACHINE, netIfacesRegistry, registry.ENUMERATE_SUB_KEYS)
+	if err != nil {
+		panic(err)
+	}
+	defer regKey.Close()
+
+	ifaces, err := regKey.ReadSubKeyNames(0)
+	if err != nil {
+		panic(err)
+	}
+	for _, iface := range ifaces {
+		suffixes := getRegistryValue(fmt.Sprintf("%s\\%s", netIfacesRegistry, iface), "SearchList")
+		if suffixes == "" {
+			continue
+		}
+		for _, suffix := range strings.Split(suffixes, ",") {
+			if !elemInList(suffix, allSuffixes) {
+				allSuffixes = append(allSuffixes, suffix)
+			}
+		}
+	}
+
+	return allSuffixes
+}
+
 func getNetworkParams() *FixedInfo {
 	// We don't know how big we should make the byte buffer, but the call will tell us by
 	// setting the size afterwards.
