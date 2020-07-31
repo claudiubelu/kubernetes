@@ -14,13 +14,18 @@
 
 ARG BASEIMAGE
 ARG REGISTRY
-FROM $REGISTRY/windows-image-builder-helper:1.0 as helper
+
+# We're using a Linux image to unpack the archive, then we're copying it over to Windows.
+FROM --platform=linux/amd64 alpine:3.6 as prep
+
+ADD https://github.com/coredns/coredns/releases/download/v1.5.0/coredns_1.5.0_windows_amd64.tgz /coredns.tgz
+RUN tar -xzvf /coredns.tgz
+
+FROM $REGISTRY/windows-image-builder-helper:1.1 as helper
 FROM $BASEIMAGE
 
+COPY --from=prep /coredns.exe /coredns.exe
 COPY --from=helper /dig /dig
 
-RUN setx /M PATH "C:\dig\;%PATH%
-RUN powershell -Command "\
-    curl.exe 'https://github.com/coredns/coredns/releases/download/v1.5.0/coredns_1.5.0_windows_amd64.tgz' -o C:\coredns.tgz;\
-    tar.exe -xzvf C:\coredns.tgz;\
-    Remove-Item C:\coredns.tgz"
+# NOTE(claudiub): docker buildx sets the PATH env variable to a Linux-like PATH, which is not desirable.
+ENV PATH="C:\dig\;C:\Windows\system32;C:\Windows;C:\Program Files\PowerShell;"

@@ -12,22 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASEIMAGE
+ARG OS_VERSION
+FROM --platform=windows/amd64 mcr.microsoft.com/windows/servercore:$OS_VERSION as prep
+FROM scratch
 
-# We're using a Linux image to unpack the archive, then we're copying it over to Windows.
-FROM --platform=linux/amd64 alpine:3.6 as prep
-
-ADD https://github.com/MSOpenTech/redis/releases/download/win-3.2.100/Redis-x64-3.2.100.zip /redis.zip
-RUN mkdir /redis &&\
-    unzip /redis.zip -d /redis
-
-FROM $BASEIMAGE
-
-COPY --from=prep /redis /redis
-
-COPY redis.conf /redis/redis.windows.conf
-
-EXPOSE 6379
-VOLUME C:/data
-
-CMD ["/redis/redis-server.exe", "/redis/redis.windows.conf"]
+COPY --from=prep /Windows/System32/en-US/nltest.exe.mui /Windows/System32/en-US/nltest.exe.mui
+COPY --from=prep /Windows/System32/nltest.exe /Windows/System32/nltest.exe
+COPY --from=prep /Windows/System32/netapi32.dll /Windows/System32/netapi32.dll
+COPY --from=prep /Windows/System32/ntdsapi.dll /Windows/System32/ntdsapi.dll

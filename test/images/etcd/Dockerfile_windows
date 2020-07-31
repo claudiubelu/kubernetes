@@ -13,16 +13,21 @@
 # limitations under the License.
 
 ARG BASEIMAGE
-FROM claudiubelu/windows-image-builder-helper:1.0 as helper
+ARG REGISTRY
+ARG OS_VERSION
+
+# We're using a Linux image to unpack the archive, then we're copying it over to Windows.
+FROM --platform=linux/amd64 alpine:3.6 as prep
+
+ADD https://github.com/etcd-io/etcd/releases/download/v3.4.9/etcd-v3.4.9-windows-amd64.zip /etcd.zip
+RUN mkdir /etcd &&\
+    unzip /etcd.zip -d /etcd
+
+FROM $REGISTRY/windows-image-builder-helper:1.1 as helper
+FROM --platform=linux/amd64 $REGISTRY/windows-servercore-cache:1.0-linux-amd64-$OS_VERSION as servercore-helper
 FROM $BASEIMAGE
 
-COPY --from=helper /Windows/System32/netapi32.dll /Windows/System32/netapi32.dll
-
-RUN mkdir C:\usr\local\ &\
-    cd C:\usr\local &\
-    curl -L "https://github.com/etcd-io/etcd/releases/download/v3.4.9/etcd-v3.4.9-windows-amd64.zip" -o etcd-windows-amd64.zip &\
-    tar -xf etcd-windows-amd64.zip &\
-    move etcd-v3.4.9-windows-amd64 C:\usr\local\bin &\
-    del etcd-windows-amd64.zip
+COPY --from=prep /etcd /usr/local/bin
+COPY --from=servercore-helper /Windows/System32/netapi32.dll /Windows/System32/netapi32.dll
 
 ENTRYPOINT ["/usr/local/bin/etcd.exe"]

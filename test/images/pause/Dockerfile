@@ -14,13 +14,15 @@
 
 ARG BASEIMAGE
 ARG REGISTRY
-FROM $REGISTRY/windows-image-builder-helper:1.0 as helper
+ARG OS_VERSION
+
+FROM --platform=linux/amd64 $REGISTRY/windows-servercore-cache:1.0-linux-amd64-$OS_VERSION as servercore-helper
 FROM $BASEIMAGE
 
 # gMSA requires the nltest.exe command, which also requires ntdsapi.dll.
-COPY --from=helper /Windows/System32/ntdsapi.dll /Windows/System32/ntdsapi.dll
-COPY --from=helper /Windows/System32/nltest.exe /Windows/System32/nltest.exe
-COPY --from=helper /Windows/System32/en-US/nltest.exe.mui /Windows/System32/en-US/nltest.exe.mui
+COPY --from=servercore-helper /Windows/System32/ntdsapi.dll /Windows/System32/ntdsapi.dll
+COPY --from=servercore-helper /Windows/System32/nltest.exe /Windows/System32/nltest.exe
+COPY --from=servercore-helper /Windows/System32/en-US/nltest.exe.mui /Windows/System32/en-US/nltest.exe.mui
 
 ADD pauseloop pause
 ENTRYPOINT ["/pause"]
