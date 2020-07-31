@@ -13,16 +13,21 @@
 # limitations under the License.
 
 ARG BASEIMAGE
+
+# We're using a Linux image to unpack the archive, then we're copying it over to Windows.
+FROM --platform=linux/amd64 alpine:3.6 as prep
+
+ADD https://github.com/MSOpenTech/redis/releases/download/win-3.2.100/Redis-x64-3.2.100.zip /redis.zip
+RUN mkdir /redis &&\
+    unzip /redis.zip -d /redis
+
 FROM $BASEIMAGE
 
-WORKDIR /redis
-RUN curl -L https://github.com/MSOpenTech/redis/releases/download/win-3.2.100/Redis-x64-3.2.100.zip -o redis.zip &\
-    unzip redis.zip &\
-    del redis.zip
+COPY --from=prep /redis /redis
 
-COPY redis.conf ./redis.windows.conf
+COPY redis.conf /redis/redis.windows.conf
 
 EXPOSE 6379
 VOLUME C:/data
 
-CMD ["redis-server", "redis.windows.conf"]
+CMD ["/redis/redis-server.exe", "/redis/redis.windows.conf"]

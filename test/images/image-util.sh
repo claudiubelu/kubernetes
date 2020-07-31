@@ -121,7 +121,7 @@ build() {
     # and build the image from temporary directory
     mkdir -p "${KUBE_ROOT}"/_tmp
     temp_dir=$(mktemp -d "${KUBE_ROOT}"/_tmp/test-images-build.XXXXXX)
-    kube::util::trap_add "rm -rf ${temp_dir}" EXIT
+    #kube::util::trap_add "rm -rf ${temp_dir}" EXIT
 
     cp -r "${img_folder}"/* "${temp_dir}"
     if [[ -f ${img_folder}/Makefile ]]; then
@@ -195,7 +195,8 @@ push() {
     os_archs=$(printf 'linux/%s\n' "${!QEMUARCHS[*]}")
   fi
 
-  alias_name="$(cat "${image}/ALIAS" 2>/dev/null || true)"
+  pushd "${image}"
+  alias_name="$(cat ALIAS 2>/dev/null || true)"
   if [[ -n "${alias_name}" ]]; then
     echo "Found an alias for '${image}'. Pushing image as '${alias_name}.'"
     image="${alias_name}"
@@ -236,6 +237,7 @@ push() {
         "${HOME}/.docker/manifests/${manifest_image_folder}/${manifest_image_folder}-${suffix}"
     fi
   done
+  popd
   docker manifest push --purge "${REGISTRY}/${image}:${TAG}"
 }
 
@@ -277,9 +279,10 @@ if [[ "${WHAT}" == "all-conformance" ]]; then
     eval "${TASK}" "${image}" "$@"
   done
 elif [[ "${WHAT}" == "all-nonconformance" ]]; then
+  shift
   images=("apparmor-loader" "etcd" "httpd" "httpd-new" "ipc-utils" "nginx" "nginx-new" "nonroot" "pause" "redis")
   for image in "${images[@]}"; do
-    eval "${TASK}" "${image}"
+    eval "${TASK}" "${image}" "$@"
   done
 else
   eval "${TASK}" "$@"
