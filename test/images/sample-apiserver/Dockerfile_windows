@@ -16,10 +16,13 @@
 # see e2e test named "Should be able to support the 1.17 Sample API Server using the current Aggregator"
 
 ARG BASEIMAGE
-FROM claudiubelu/windows-image-builder-helper:1.0 as helper
+ARG REGISTRY
+ARG OS_VERSION
+
+FROM --platform=linux/amd64 $REGISTRY/windows-servercore-cache:1.0-linux-amd64-$OS_VERSION as servercore-helper
 FROM $BASEIMAGE
 
-COPY --from=helper /Windows/System32/netapi32.dll /Windows/System32/netapi32.dll
+COPY --from=servercore-helper /Windows/System32/netapi32.dll /Windows/System32/netapi32.dll
 ADD sample-apiserver /sample-apiserver.exe
 
 ENTRYPOINT ["/sample-apiserver.exe"]

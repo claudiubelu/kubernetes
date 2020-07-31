@@ -13,17 +13,16 @@
 # limitations under the License.
 
 ARG BASEIMAGE
+ARG REGISTRY
+ARG OS_VERSION
 
-FROM claudiubelu/nginx:1.18.0 as helper
+FROM claudiubelu/nginx:1.18.0 as nginx-source
+FROM --platform=linux/amd64 $REGISTRY/windows-servercore-cache:1.0-linux-amd64-$OS_VERSION as servercore-helper
 FROM $BASEIMAGE
 
-COPY --from=helper /nginx /nginx
+COPY --from=nginx-source /nginx /usr/share/nginx
+#COPY --from=servercore-helper /Windows/System32/SyncHost.exe /Windows/System32/SyncHost.exe
 
 USER ContainerAdministrator
-RUN mkdir C:\usr\share &&\
-    mklink /D C:\usr\share\nginx C:\nginx &&\
-    mklink C:\Windows\System32\sync.exe C:\Windows\System32\SyncHost.exe
-
-WORKDIR /nginx/
 EXPOSE 80
-ENTRYPOINT ["nginx.exe"]
+ENTRYPOINT ["/usr/share/nginx/nginx.exe"]
