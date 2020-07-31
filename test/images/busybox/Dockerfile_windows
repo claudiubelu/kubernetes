@@ -22,6 +22,7 @@ RUN mkdir /tmp-dir
 
 FROM e2eteam/busybox-helper:1.29.0 as busybox-helper
 FROM e2eteam/powershell-helper:6.2.0 as ps-helper
+FROM $BASEIMAGE
 
 COPY --from=prep /tmp-dir /tmp
 COPY --from=busybox-helper /bin /bin
