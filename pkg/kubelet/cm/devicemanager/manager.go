@@ -22,6 +22,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"sync"
 	"time"
@@ -126,7 +127,11 @@ func (s *sourcesReadyStub) AllReady() bool          { return true }
 
 // NewManagerImpl creates a new manager.
 func NewManagerImpl(topology []cadvisorapi.Node, topologyAffinityStore topologymanager.Store) (*ManagerImpl, error) {
-	return newManagerImpl(pluginapi.KubeletSocket, topology, topologyAffinityStore)
+	socketPath := pluginapi.KubeletSocket
+	if runtime.GOOS == "windows" {
+		socketPath = os.Getenv("SYSTEMDRIVE") + pluginapi.KubeletSocketWindows
+	}
+	return newManagerImpl(socketPath, topology, topologyAffinityStore)
 }
 
 func newManagerImpl(socketPath string, topology []cadvisorapi.Node, topologyAffinityStore topologymanager.Store) (*ManagerImpl, error) {
@@ -905,9 +910,11 @@ func (m *ManagerImpl) allocateContainerResources(pod *v1.Pod, container *v1.Cont
 		// Update internal cached podDevices state.
 		m.mutex.Lock()
 		for dev := range allocDevices {
-			for idx := range m.allDevices[resource][dev].Topology.Nodes {
-				node := m.allDevices[resource][dev].Topology.Nodes[idx]
-				allocDevicesWithNUMA[node.ID] = append(allocDevicesWithNUMA[node.ID], dev)
+			if m.allDevices[resource][dev].Topology != nil {
+				for idx := range m.allDevices[resource][dev].Topology.Nodes {
+					node := m.allDevices[resource][dev].Topology.Nodes[idx]
+					allocDevicesWithNUMA[node.ID] = append(allocDevicesWithNUMA[node.ID], dev)
+				}
 			}
 		}
 		m.mutex.Unlock()
