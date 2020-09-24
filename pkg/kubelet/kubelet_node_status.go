@@ -114,9 +114,13 @@ func (kl *Kubelet) tryRegisterWithAPIServer(node *v1.Node) bool {
 	// Edge case: the node was previously registered; reconcile
 	// the value of the controller-managed attach-detach
 	// annotation.
+	klog.Infof("Registered node: %+v", originalNode)
 	requiresUpdate := kl.reconcileCMADAnnotationWithExistingNode(node, existingNode)
 	requiresUpdate = kl.updateDefaultLabels(node, existingNode) || requiresUpdate
 	requiresUpdate = kl.reconcileExtendedResource(node, existingNode) || requiresUpdate
+	requiresUpdate = kl.updateProviderID(node, existingNode) || requiresUpdate
+
+	klog.Infof("Requires update: %v, updated node: %+v", requiresUpdate, existingNode)
 	if requiresUpdate {
 		if _, _, err := nodeutil.PatchNodeStatus(kl.kubeClient.CoreV1(), types.NodeName(kl.nodeName), originalNode, existingNode); err != nil {
 			klog.Errorf("Unable to reconcile node %q with API server: error updating node: %v", kl.nodeName, err)
@@ -125,6 +129,18 @@ func (kl *Kubelet) tryRegisterWithAPIServer(node *v1.Node) bool {
 	}
 
 	return true
+}
+
+// Updates the node's ProviderID, if necessary.
+func (kl *Kubelet) updateProviderID(initialNode, node *v1.Node) bool {
+	requiresUpdate := false
+
+	if node.Spec.ProviderID != initialNode.Spec.ProviderID {
+		node.Spec.ProviderID = initialNode.Spec.ProviderID
+		requiresUpdate = true
+	}
+
+	return requiresUpdate
 }
 
 // Zeros out extended resource capacity during reconciliation.
