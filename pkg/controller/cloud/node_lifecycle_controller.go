@@ -148,10 +148,20 @@ func (c *CloudNodeLifecycleController) MonitorNodes() {
 
 		// At this point the node has NotReady status, we need to check if the node has been removed
 		// from the cloud provider. If node cannot be found in cloudprovider, then delete the node
-		exists, err := ensureNodeExistsByProviderID(instances, node)
+		exists, updatedUUID, err := ensureNodeExistsByLabel(instances, node)
 		if err != nil {
 			klog.Errorf("error checking if node %s exists: %v", node.Name, err)
 			continue
+		}
+
+		if updatedUUID != "" {
+			klog.Infof("The node %s's OpenStack instance UUID has been updated to '%s'. Updating label.", node.Name, updatedUUID)
+			node.ObjectMeta.Labels["openstack.org/instance-uuid"] = updatedUUID
+			_, err = c.kubeClient.CoreV1().Nodes().Update(node)
+			if err != nil {
+				klog.Errorf("Error while updating node %s label.", node.Name)
+				continue
+			}
 		}
 
 		if !exists {
@@ -200,7 +210,12 @@ func shutdownInCloudProvider(ctx context.Context, cloud cloudprovider.Interface,
 		return false, errors.New("cloud provider does not support instances")
 	}
 
-	shutdown, err := instances.InstanceShutdownByProviderID(ctx, node.Spec.ProviderID)
+	instanceUUID, ok:= getOpenstackIDFromLabel(node)
+	if !ok || instanceUUID == "" {
+		return false, errors.New("node does not have a openstack.org/instance-uuid label")
+	}
+
+	shutdown, err := instances.InstanceShutdownByProviderID(ctx, fmt.Sprintf("openstack:///%s", instanceUUID))
 	if err == cloudprovider.NotImplemented {
 		return false, nil
 	}

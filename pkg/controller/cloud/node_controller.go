@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -134,10 +135,18 @@ func (cnc *CloudNodeController) updateNodeAddress(node *v1.Node, instances cloud
 		return
 	}
 	// Node that isn't present according to the cloud provider shouldn't have its address updated
-	exists, err := ensureNodeExistsByProviderID(instances, node)
+	exists, updatedUUID, err := ensureNodeExistsByLabel(instances, node)
 	if err != nil {
 		// Continue to update node address when not sure the node is not exists
 		klog.Errorf("%v", err)
+	} else if updatedUUID != "" {
+		klog.Infof("The node %s's OpenStack instance UUID has been updated to '%s'. Updating label.", node.Name, updatedUUID)
+		node.ObjectMeta.Labels["openstack.org/instance-uuid"] = updatedUUID
+		_, err = cnc.kubeClient.CoreV1().Nodes().Update(node)
+		if err != nil {
+			klog.Errorf("Error while updating node %s label.", node.Name)
+			return
+		}
 	} else if !exists {
 		klog.V(4).Infof("The node %s is no longer present according to the cloud provider, do not process.", node.Name)
 		return
@@ -255,10 +264,14 @@ func (cnc *CloudNodeController) initializeNode(node *v1.Node) {
 			return nil
 		}
 
-		if curNode.Spec.ProviderID == "" {
+		instanceUUID, ok := curNode.ObjectMeta.Labels["openstack.org/instance-uuid"]
+		if !ok || instanceUUID == "" {
+			klog.Errorf("Node %s does not have a 'openstack.org/instance-uuid' label. Trying to set it.", curNode.Name)
 			providerID, err := cloudprovider.GetInstanceProviderID(context.TODO(), cnc.cloud, types.NodeName(curNode.Name))
 			if err == nil {
 				curNode.Spec.ProviderID = providerID
+				instanceUUID := strings.TrimLeft(providerID, "openstack:///")
+				curNode.ObjectMeta.Labels["openstack.org/instance-uuid"] = instanceUUID
 			} else {
 				// we should attempt to set providerID on curNode, but
 				// we can continue if we fail since we will attempt to set
@@ -341,6 +354,44 @@ func excludeCloudTaint(taints []v1.Taint) []v1.Taint {
 	return newTaints
 }
 
+func getOpenstackIDFromLabel(node *v1.Node) (string, bool) {
+	label, ok := node.ObjectMeta.Labels["openstack.org/instance-uuid"]
+	if !ok {
+		klog.Warningf("Node '%s' does not have a 'openstack.org/instance-uuid' label", node.Name)
+	}
+
+	return label, ok
+}
+
+// ensureNodeExistsByLabel checks if the instance exists by the openstack.org/instance-uuid Label.
+// If the label does not exist or if it's empty, it calls instanceID with node name to get provider ID
+// Returns: if the node exists, the updated OpenStack instance UUID the node must be labeled with, error encountered.
+func ensureNodeExistsByLabel(instances cloudprovider.Instances, node *v1.Node) (bool, string, error) {
+	updatedUUID := ""
+	instanceUUID, ok := getOpenstackIDFromLabel(node)
+	providerID := fmt.Sprintf("openstack:///%s", instanceUUID)
+
+	if !ok || instanceUUID == "" {
+		providerID, err := instances.InstanceID(context.TODO(), types.NodeName(node.Name))
+		if err != nil {
+			if err == cloudprovider.InstanceNotFound {
+				return false, "", nil
+			}
+			return false, "", err
+		}
+
+		if providerID == "" {
+			klog.Warningf("Cannot find valid providerID for node name %q, assuming non existence", node.Name)
+			return false, "", nil
+		}
+
+		updatedUUID = strings.TrimPrefix(providerID, "openstack:///")
+	}
+
+	exists, err := instances.InstanceExistsByProviderID(context.TODO(), providerID)
+	return exists, updatedUUID, err
+}
+
 // ensureNodeExistsByProviderID checks if the instance exists by the provider id,
 // If provider id in spec is empty it calls instanceId with node name to get provider id
 func ensureNodeExistsByProviderID(instances cloudprovider.Instances, node *v1.Node) (bool, error) {
@@ -365,7 +416,9 @@ func ensureNodeExistsByProviderID(instances cloudprovider.Instances, node *v1.No
 }
 
 func getNodeAddressesByProviderIDOrName(instances cloudprovider.Instances, node *v1.Node) ([]v1.NodeAddress, error) {
-	nodeAddresses, err := instances.NodeAddressesByProviderID(context.TODO(), node.Spec.ProviderID)
+	instanceUUID, _ := getOpenstackIDFromLabel(node)
+	providerID := fmt.Sprintf("openstack:///%s", instanceUUID)
+	nodeAddresses, err := instances.NodeAddressesByProviderID(context.TODO(), providerID)
 	if err != nil {
 		providerIDErr := err
 		nodeAddresses, err = instances.NodeAddresses(context.TODO(), types.NodeName(node.Name))
