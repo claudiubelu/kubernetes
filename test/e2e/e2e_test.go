@@ -32,10 +32,13 @@ import (
 	// See https://github.com/kubernetes/kubernetes/issues/74827
 	// "github.com/onsi/ginkgo"
 
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/component-base/version"
+	"k8s.io/klog/v2"
 	conformancetestdata "k8s.io/kubernetes/test/conformance/testdata"
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/framework/config"
+	"k8s.io/kubernetes/test/e2e/framework/daemonset"
 	"k8s.io/kubernetes/test/e2e/framework/testfiles"
 	e2etestingmanifests "k8s.io/kubernetes/test/e2e/testing-manifests"
 	testfixtures "k8s.io/kubernetes/test/fixtures"
@@ -128,10 +131,52 @@ func TestMain(m *testing.M) {
 		testfiles.AddFileSource(testfiles.RootFileSource{Root: framework.TestContext.RepoRoot})
 	}
 
+	if framework.TestContext.PrepullImages {
+		klog.Infof("Pre-pulling images so that they are cached for the tests.")
+		err := prepullImages()
+		framework.ExpectNoError(err)
+	}
+
 	rand.Seed(time.Now().UnixNano())
 	os.Exit(m.Run())
 }
 
 func TestE2E(t *testing.T) {
 	RunE2ETests(t)
+}
+
+func prepullImages() {
+	f := framework.NewDefaultFramework("image-prepull")
+	ns := f.Namespace.Name
+	c := f.ClientSet
+	defer f.DeleteNamespace(ns)
+
+	prePulledImages := []int{
+		imageutils.Agnhost,
+		imageutils.BusyBox,
+		imageutils.Nginx,
+		imageutils.Httpd,
+	}
+
+	var imgPullers []appsv1.DaemonSet
+	for _, image := range prePulledImages {
+		imageName := imageutils.GetE2EImage(image)
+		config := imageutils.GetConfig(image)
+		dsName := fmt.Sprintf("image-puller-%s-%s", config.name, config.version)
+
+		dsSpec := daemonset.NewDaemonSet(dsName, imageName, nil)
+		ds, err := c.AppsV1().DaemonSets(ns).Create(context.TODO(), dsSpec, metav1.CreateOptions{})
+		framework.ExpectNoError(err)
+		imgPullers = append(imgPullers, ds)
+	}
+
+	// this should not be a multiple of 5, because node status updates
+	// every 5 seconds. See https://github.com/kubernetes/kubernetes/pull/14915.
+	dsRetryPeriod  := 1 * time.Second
+	dsRetryTimeout := 5 * time.Minute
+	for _, imgPuller := range imgPullers {
+		framework.Logf("Waiting for %s", imgPuller.Name)
+		err = wait.PollImmediate(dsRetryPeriod, dsRetryTimeout, daemonset.CheckRunningOnAllNodes(f, imgPuller))
+		framework.ExpectNoError(err, "error waiting for image to be pulled")
+	}
 }
