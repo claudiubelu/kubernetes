@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"runtime"
 	"sort"
 
 	v1 "k8s.io/api/core/v1"
@@ -30,7 +29,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/features"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
-	runtimeutil "k8s.io/kubernetes/pkg/kubelet/kuberuntime/util"
 	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
@@ -141,14 +139,11 @@ func (m *kubeGenericRuntimeManager) generatePodSandboxConfig(pod *v1.Pod, attemp
 		return nil, err
 	}
 	podSandboxConfig.Linux = lc
-
-	if runtime.GOOS == "windows" {
-		wc, err := m.generatePodSandboxWindowsConfig(pod)
-		if err != nil {
-			return nil, err
-		}
-		podSandboxConfig.Windows = wc
+	wc, err := getPodSandboxWindowsConfig(m, pod)
+	if err != nil {
+		return nil, err
 	}
+	podSandboxConfig.Windows = wc
 
 	// Update config to include overhead, sandbox level resources
 	if err := m.applySandboxResources(pod, podSandboxConfig); err != nil {
@@ -187,35 +182,16 @@ func (m *kubeGenericRuntimeManager) generatePodSandboxLinuxConfig(pod *v1.Pod) (
 
 	if pod.Spec.SecurityContext != nil {
 		sc := pod.Spec.SecurityContext
-		if sc.RunAsUser != nil && runtime.GOOS != "windows" {
-			lc.SecurityContext.RunAsUser = &runtimeapi.Int64Value{Value: int64(*sc.RunAsUser)}
-		}
-		if sc.RunAsGroup != nil && runtime.GOOS != "windows" {
-			lc.SecurityContext.RunAsGroup = &runtimeapi.Int64Value{Value: int64(*sc.RunAsGroup)}
-		}
-		namespaceOptions, err := runtimeutil.NamespacesForPod(pod, m.runtimeHelper)
-		if err != nil {
+		if err := m.addLinuxSecurityContext(lc, pod); err != nil {
 			return nil, err
 		}
-		lc.SecurityContext.NamespaceOptions = namespaceOptions
 
-		if sc.FSGroup != nil && runtime.GOOS != "windows" {
-			lc.SecurityContext.SupplementalGroups = append(lc.SecurityContext.SupplementalGroups, int64(*sc.FSGroup))
-		}
 		if groups := m.runtimeHelper.GetExtraSupplementalGroupsForPod(pod); len(groups) > 0 {
 			lc.SecurityContext.SupplementalGroups = append(lc.SecurityContext.SupplementalGroups, groups...)
 		}
 		if sc.SupplementalGroups != nil {
 			for _, sg := range sc.SupplementalGroups {
 				lc.SecurityContext.SupplementalGroups = append(lc.SecurityContext.SupplementalGroups, int64(sg))
-			}
-		}
-		if sc.SELinuxOptions != nil && runtime.GOOS != "windows" {
-			lc.SecurityContext.SelinuxOptions = &runtimeapi.SELinuxOption{
-				User:  sc.SELinuxOptions.User,
-				Role:  sc.SELinuxOptions.Role,
-				Type:  sc.SELinuxOptions.Type,
-				Level: sc.SELinuxOptions.Level,
 			}
 		}
 	}
