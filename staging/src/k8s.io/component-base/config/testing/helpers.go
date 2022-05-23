@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -76,6 +77,9 @@ func matchOutputFile(t *testing.T, actual []byte, expectedFilePath string) {
 	if err != nil && !os.IsNotExist(err) {
 		t.Fatalf("couldn't read test data: %v", err)
 	}
+
+	// Windows may have \r\n line endings, which may not match our expectations.
+	expected = []byte(strings.Replace(string(expected), "\r", "", -1))
 
 	needsUpdate := false
 	const updateEnvVar = "UPDATE_COMPONENTCONFIG_FIXTURE_DATA"

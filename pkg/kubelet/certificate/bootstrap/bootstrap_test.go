@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -105,6 +106,8 @@ users:
 	if err != nil {
 		t.Fatal(err)
 	}
+	// ioutil.TempFile also opens the file, and removing it without closing it will result in a failure.
+	defer filevalid.Close()
 	ioutil.WriteFile(filevalid.Name(), testDataValid, os.FileMode(0755))
 
 	testDataInvalid := []byte(`
@@ -145,6 +148,7 @@ users:
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer fileinvalid.Close()
 	ioutil.WriteFile(fileinvalid.Name(), testDataInvalid, os.FileMode(0755))
 
 	testDatabootstrap := []byte(`
@@ -182,6 +186,7 @@ users:
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer fileboot.Close()
 	ioutil.WriteFile(fileboot.Name(), testDatabootstrap, os.FileMode(0755))
 
 	dir, err := ioutil.TempDir(fileDir, "k8s-test-certstore-current")
@@ -210,16 +215,16 @@ users:
 			expectedCertConfig: &restclient.Config{
 				Host: "https://cluster-b.com",
 				TLSClientConfig: restclient.TLSClientConfig{
-					CertFile: fileDir + "/mycertvalid.crt",
-					KeyFile:  fileDir + "/mycertvalid.key",
+					CertFile: filepath.Join(fileDir, "mycertvalid.crt"),
+					KeyFile:  filepath.Join(fileDir, "mycertvalid.key"),
 				},
 				BearerToken: "",
 			},
 			expectedClientConfig: &restclient.Config{
 				Host: "https://cluster-b.com",
 				TLSClientConfig: restclient.TLSClientConfig{
-					CertFile: fileDir + "/mycertvalid.crt",
-					KeyFile:  fileDir + "/mycertvalid.key",
+					CertFile: filepath.Join(fileDir, "mycertvalid.crt"),
+					KeyFile:  filepath.Join(fileDir, "mycertvalid.key"),
 				},
 				BearerToken: "",
 			},
@@ -232,16 +237,16 @@ users:
 			expectedCertConfig: &restclient.Config{
 				Host: "https://cluster-b.com",
 				TLSClientConfig: restclient.TLSClientConfig{
-					CertFile: fileDir + "/mycertvalid.crt",
-					KeyFile:  fileDir + "/mycertvalid.key",
+					CertFile: filepath.Join(fileDir, "mycertvalid.crt"),
+					KeyFile:  filepath.Join(fileDir, "mycertvalid.key"),
 				},
 				BearerToken: "",
 			},
 			expectedClientConfig: &restclient.Config{
 				Host: "https://cluster-b.com",
 				TLSClientConfig: restclient.TLSClientConfig{
-					CertFile: fileDir + "/mycertvalid.crt",
-					KeyFile:  fileDir + "/mycertvalid.key",
+					CertFile: filepath.Join(fileDir, "mycertvalid.crt"),
+					KeyFile:  filepath.Join(fileDir, "mycertvalid.key"),
 				},
 				BearerToken: "",
 			},

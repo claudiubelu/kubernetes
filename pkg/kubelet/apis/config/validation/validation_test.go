@@ -17,6 +17,7 @@ limitations under the License.
 package validation_test
 
 import (
+	goruntime "runtime"
 	"strings"
 	"testing"
 	"time"
@@ -83,6 +84,11 @@ func TestValidateKubeletConfiguration(t *testing.T) {
 		{
 			name: "Success",
 			configure: func(conf *kubeletconfig.KubeletConfiguration) *kubeletconfig.KubeletConfiguration {
+				// These config options are not supported on Windows.
+				if goruntime.GOOS == "windows" {
+					conf.CgroupsPerQOS = false
+					conf.EnforceNodeAllocatable = []string{}
+				}
 				return conf
 			},
 		},

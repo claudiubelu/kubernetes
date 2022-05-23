@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"testing"
 
 	utiltest "k8s.io/kubernetes/pkg/kubelet/kubeletconfig/util/test"
@@ -57,10 +58,11 @@ func (f *file) write(fs utilfs.Filesystem, dir string) error {
 			return err
 		}
 		_, err = handle.Write([]byte(f.data))
+		// The file should always be closed, not just in error cases.
+		if cerr := handle.Close(); cerr != nil {
+			return fmt.Errorf("error closing file: %v", cerr)
+		}
 		if err != nil {
-			if cerr := handle.Close(); cerr != nil {
-				return fmt.Errorf("error %v closing file after error: %v", cerr, err)
-			}
 			return err
 		}
 	} else {
@@ -171,6 +173,12 @@ func (c *test) run(t *testing.T, fs utilfs.Filesystem) {
 // simple test of the above helper functions
 func TestHelpers(t *testing.T) {
 	// omitting the test.fn means test.err is compared to errors from test.expect
+	missingFileError := "no such file or directory"
+	missingFolderError := "no such file or directory"
+	if goruntime.GOOS == "windows" {
+		missingFileError = "The system cannot find the file specified."
+		missingFolderError = "The system cannot find the path specified."
+	}
 	cases := []test{
 		{
 			desc:    "regular file",
@@ -195,12 +203,12 @@ func TestHelpers(t *testing.T) {
 		{
 			desc:    "missing file",
 			expects: []file{{name: "foo", data: "bar"}},
-			err:     "no such file or directory",
+			err:     missingFileError,
 		},
 		{
 			desc:    "missing directory",
 			expects: []file{{name: "foo/bar", mode: os.ModeDir}},
-			err:     "no such file or directory",
+			err:     missingFolderError,
 		},
 	}
 	for _, c := range cases {
@@ -292,6 +300,10 @@ func TestReplaceFile(t *testing.T) {
 		}
 		return errs
 	}
+	missingFileError := "no such file or directory"
+	if goruntime.GOOS == "windows" {
+		missingFileError = "The system cannot find the path specified."
+	}
 	cases := []test{
 		{
 			fn:      fn,
@@ -312,7 +324,7 @@ func TestReplaceFile(t *testing.T) {
 				return nil
 			},
 			desc: "neither parent nor file exists",
-			err:  "no such file or directory",
+			err:  missingFileError,
 		},
 	}
 	for _, c := range cases {

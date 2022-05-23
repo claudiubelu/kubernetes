@@ -329,6 +329,7 @@ func TestCompressLog(t *testing.T) {
 	testContent := "test log content"
 	_, err = testFile.Write([]byte(testContent))
 	require.NoError(t, err)
+	testFile.Close()
 
 	testLog := testFile.Name()
 	c := &containerLogManager{osInterface: container.RealOS{}}
@@ -388,6 +389,7 @@ func TestRotateLatestLog(t *testing.T) {
 			f.InjectError("ReopenContainerLog", test.runtimeError)
 		}
 		testFile, err := ioutil.TempFile(dir, "test-rotate-latest-log")
+		testFile.Close()
 		require.NoError(t, err)
 		defer testFile.Close()
 		testLog := testFile.Name()

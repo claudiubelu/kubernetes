@@ -17,9 +17,13 @@ limitations under the License.
 package kubelet
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/volume/util/hostutil"
@@ -84,7 +88,11 @@ func TestMakeMountsWindows(t *testing.T) {
 
 	fhu := hostutil.NewFakeHostUtil(nil)
 	fsp := &subpath.FakeSubpath{}
-	mounts, _, _ := makeMounts(&pod, "/pod", &container, "fakepodname", "", []string{""}, podVolumes, fhu, fsp, nil)
+	podDir, err := ioutil.TempDir("", "test-rotate-logs")
+	require.NoError(t, err)
+	defer os.RemoveAll(podDir)
+	mounts, _, err := makeMounts(&pod, podDir, &container, "fakepodname", "", []string{""}, podVolumes, fhu, fsp, nil)
+	require.NoError(t, err)
 
 	expectedMounts := []kubecontainer.Mount{
 		{
@@ -135,6 +143,13 @@ func TestMakeMountsWindows(t *testing.T) {
 			HostPath:       `\\.\pipe\pipe1`,
 			ReadOnly:       false,
 			SELinuxRelabel: false,
+		},
+		{
+			Name:           "k8s-managed-etc-hosts",
+			ContainerPath:  `C:\Windows\System32\drivers\etc\hosts`,
+			HostPath:       filepath.Join(podDir, "etc-hosts"),
+			ReadOnly:       false,
+			SELinuxRelabel: true,
 		},
 	}
 	assert.Equal(t, expectedMounts, mounts, "mounts of container %+v", container)
