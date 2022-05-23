@@ -19,6 +19,7 @@ package configfiles
 import (
 	"fmt"
 	"path/filepath"
+	goruntime "runtime"
 
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	kubeletconfig "k8s.io/kubernetes/pkg/kubelet/apis/config"
@@ -83,8 +84,18 @@ func resolveRelativePaths(paths []*string, root string) {
 	for _, path := range paths {
 		// leave empty paths alone, "no path" is a valid input
 		// do not attempt to resolve paths that are already absolute
-		if len(*path) > 0 && !filepath.IsAbs(*path) {
+		if len(*path) > 0 && !isAbs(*path) {
 			*path = filepath.Join(root, *path)
 		}
 	}
+}
+
+func isAbs(path string) bool {
+	if filepath.IsAbs(path) {
+		return true
+	}
+
+	// on Windows, filepath.IsAbs will not return True for paths prefixed with a slash, even
+	// though they can be used as absolute paths.
+	return goruntime.GOOS == "windows" && len(path) > 0 && (path[0] == '\\' || path[0] == '/')
 }

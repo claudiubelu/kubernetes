@@ -222,7 +222,7 @@ func fieldProfile(scmp *v1.SeccompProfile, profileRootPath string, fallbackToRun
 	}
 	if scmp.Type == v1.SeccompProfileTypeLocalhost && scmp.LocalhostProfile != nil && len(*scmp.LocalhostProfile) > 0 {
 		fname := filepath.Join(profileRootPath, *scmp.LocalhostProfile)
-		return v1.SeccompLocalhostProfileNamePrefix + fname
+		return filepath.Join(v1.SeccompLocalhostProfileNamePrefix, fname)
 	}
 	if scmp.Type == v1.SeccompProfileTypeUnconfined {
 		return v1.SeccompProfileNameUnconfined
@@ -238,7 +238,7 @@ func annotationProfile(profile, profileRootPath string) string {
 	if strings.HasPrefix(profile, v1.SeccompLocalhostProfileNamePrefix) {
 		name := strings.TrimPrefix(profile, v1.SeccompLocalhostProfileNamePrefix)
 		fname := filepath.Join(profileRootPath, filepath.FromSlash(name))
-		return v1.SeccompLocalhostProfileNamePrefix + fname
+		return filepath.Join(v1.SeccompLocalhostProfileNamePrefix, fname)
 	}
 	return profile
 }

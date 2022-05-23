@@ -18,6 +18,7 @@ package kuberuntime
 
 import (
 	"path/filepath"
+	goruntime "runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,7 +37,7 @@ func seccompLocalhostRef(profileName string) string {
 }
 
 func seccompLocalhostPath(profileName string) string {
-	return "localhost/" + seccompLocalhostRef(profileName)
+	return filepath.Join("localhost", seccompLocalhostRef(profileName))
 }
 
 func TestIsInitContainerFailed(t *testing.T) {
@@ -237,6 +238,10 @@ func TestGetImageUser(t *testing.T) {
 }
 
 func TestFieldProfile(t *testing.T) {
+	localhostExpectedProfile := "localhost/test/profile.json"
+	if goruntime.GOOS == "windows" {
+		localhostExpectedProfile = "localhost\\test\\profile.json"
+	}
 	tests := []struct {
 		description     string
 		scmpProfile     *v1.SeccompProfile
@@ -282,7 +287,7 @@ func TestFieldProfile(t *testing.T) {
 				LocalhostProfile: utilpointer.StringPtr("profile.json"),
 			},
 			rootPath:        "/test/",
-			expectedProfile: "localhost//test/profile.json",
+			expectedProfile: localhostExpectedProfile,
 		},
 	}
 
@@ -293,6 +298,10 @@ func TestFieldProfile(t *testing.T) {
 }
 
 func TestFieldProfileDefaultSeccomp(t *testing.T) {
+	localhostExpectedProfile := "localhost/test/profile.json"
+	if goruntime.GOOS == "windows" {
+		localhostExpectedProfile = "localhost\\test\\profile.json"
+	}
 	tests := []struct {
 		description     string
 		scmpProfile     *v1.SeccompProfile
@@ -338,7 +347,7 @@ func TestFieldProfileDefaultSeccomp(t *testing.T) {
 				LocalhostProfile: utilpointer.StringPtr("profile.json"),
 			},
 			rootPath:        "/test/",
-			expectedProfile: "localhost//test/profile.json",
+			expectedProfile: localhostExpectedProfile,
 		},
 	}
 

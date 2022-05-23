@@ -1029,7 +1029,9 @@ func (f *frameworkImpl) runPreBindPlugin(ctx context.Context, pl framework.PreBi
 
 // RunBindPlugins runs the set of configured bind plugins until one returns a non `Skip` status.
 func (f *frameworkImpl) RunBindPlugins(ctx context.Context, state *framework.CycleState, pod *v1.Pod, nodeName string) (status *framework.Status) {
-	startTime := time.Now()
+	// On Windows, time.Now() is not as precise, 2 consecutive calls may return the same timestamp,
+	// resulting in 0 time delta / latency.
+	startTime := time.Now().Add(-time.Microsecond)
 	defer func() {
 		metrics.FrameworkExtensionPointDuration.WithLabelValues(bind, status.Code().String(), f.profileName).Observe(metrics.SinceInSeconds(startTime))
 	}()
@@ -1201,7 +1203,9 @@ func (f *frameworkImpl) WaitOnPermit(ctx context.Context, pod *v1.Pod) *framewor
 	defer f.waitingPods.remove(pod.UID)
 	klog.V(4).InfoS("Pod waiting on permit", "pod", klog.KObj(pod))
 
-	startTime := time.Now()
+	// On Windows, time.Now() is not as precise, 2 consecutive calls may return the same timestamp,
+	// resulting in 0 time delta / latency.
+	startTime := time.Now().Add(-time.Microsecond)
 	s := <-waitingPod.s
 	metrics.PermitWaitDuration.WithLabelValues(s.Code().String()).Observe(metrics.SinceInSeconds(startTime))
 

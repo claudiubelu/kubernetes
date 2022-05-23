@@ -173,7 +173,7 @@ func (prober *flexVolumeProber) handleWatchEvent(event fsnotify.Event) error {
 			if err := prober.createPluginDir(); err != nil {
 				return err
 			}
-			if err := prober.addWatchRecursive(pluginDirAbs); err != nil {
+			if err := prober.addWatchRecursive(prober.pluginDir); err != nil {
 				return err
 			}
 		}
@@ -182,7 +182,7 @@ func (prober *flexVolumeProber) handleWatchEvent(event fsnotify.Event) error {
 
 	// watch newly added subdirectories inside a driver directory
 	if eventOpIs(event, fsnotify.Create) {
-		if err := prober.addWatchRecursive(eventPathAbs); err != nil {
+		if err := prober.addWatchRecursive(event.Name); err != nil {
 			return err
 		}
 	}

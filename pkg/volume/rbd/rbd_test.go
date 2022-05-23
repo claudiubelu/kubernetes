@@ -19,9 +19,11 @@ package rbd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -160,6 +162,16 @@ func (fake *fakeDiskManager) AttachDisk(b rbdMounter) (string, error) {
 	fake.mutex.Lock()
 	defer fake.mutex.Unlock()
 	fake.rbdMapIndex++
+	if runtime.GOOS == "windows" {
+		// Windows expects Disk Numbers.
+		volIds, err := listVolumesOnDisk(strconv.Itoa(fake.rbdMapIndex))
+		if err != nil {
+			return "", err
+		}
+		fake.rbdDevices[volIds[0]] = true
+		devicePath := strconv.Itoa(fake.rbdMapIndex)
+		return devicePath, nil
+	}
 	devicePath := fmt.Sprintf("/dev/rbd%d", fake.rbdMapIndex)
 	fake.rbdDevices[devicePath] = true
 	return devicePath, nil
@@ -292,7 +304,16 @@ func doTestPlugin(t *testing.T, c *testcase) {
 			t.Errorf("Attacher.MountDevice() failed: %v", err)
 		}
 	}
-	checkMounterLog(t, fakeMounter, 1, mount.FakeAction{Action: "mount", Target: c.expectedDeviceMountPath, Source: devicePath, FSType: "ext4"})
+	// Windows mounter is mounting based on the Disk's Unique ID.
+	loggedSource := devicePath
+	if runtime.GOOS == "windows" {
+		volIds, err := listVolumesOnDisk(devicePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		loggedSource = volIds[0]
+	}
+	checkMounterLog(t, fakeMounter, 1, mount.FakeAction{Action: "mount", Target: c.expectedDeviceMountPath, Source: loggedSource, FSType: "ext4"})
 
 	// mounter
 	mounter, err := plug.(*rbdPlugin).newMounterInternal(c.spec, c.pod.UID, fdm, "secrets")
@@ -317,7 +338,7 @@ func doTestPlugin(t *testing.T, c *testcase) {
 			t.Errorf("SetUp() failed: %v", err)
 		}
 	}
-	checkMounterLog(t, fakeMounter, 2, mount.FakeAction{Action: "mount", Target: c.expectedPodMountPath, Source: devicePath, FSType: ""})
+	checkMounterLog(t, fakeMounter, 2, mount.FakeAction{Action: "mount", Target: c.expectedPodMountPath, Source: loggedSource, FSType: ""})
 
 	// unmounter
 	unmounter, err := plug.(*rbdPlugin).newUnmounterInternal(c.spec.Name(), c.pod.UID, fdm)
@@ -374,6 +395,12 @@ func TestPlugin(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	expectedDevicePath := "/dev/rbd1"
+	if runtime.GOOS == "windows" {
+		// Windows expects Disk Numbers.
+		expectedDevicePath = "1"
+	}
+
 	podUID := uuid.NewUUID()
 	var cases []*testcase
 	cases = append(cases, &testcase{
@@ -396,7 +423,7 @@ func TestPlugin(t *testing.T) {
 				UID:       podUID,
 			},
 		},
-		expectedDevicePath:      "/dev/rbd1",
+		expectedDevicePath:      expectedDevicePath,
 		expectedDeviceMountPath: filepath.Join(tmpDir, "plugins/kubernetes.io/rbd/mounts/pool1-image-image1"),
 		expectedPodMountPath:    filepath.Join(tmpDir, "pods", string(podUID), "volumes/kubernetes.io~rbd/vol1"),
 	})
@@ -425,7 +452,7 @@ func TestPlugin(t *testing.T) {
 				UID:       podUID,
 			},
 		},
-		expectedDevicePath:      "/dev/rbd1",
+		expectedDevicePath:      expectedDevicePath,
 		expectedDeviceMountPath: filepath.Join(tmpDir, "plugins/kubernetes.io/rbd/mounts/pool2-image-image2"),
 		expectedPodMountPath:    filepath.Join(tmpDir, "pods", string(podUID), "volumes/kubernetes.io~rbd/vol2"),
 	})
@@ -760,4 +787,16 @@ func TestUnsupportedVolumeHost(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected failure constructing volume spec with unsupported VolumeHost")
 	}
+}
+
+// listVolumesOnDisk - returns back list of volumes(volumeIDs) in the disk (requested in diskID) on Windows.
+func listVolumesOnDisk(diskID string) (volumeIDs []string, err error) {
+	cmd := fmt.Sprintf("(Get-Disk -DeviceId %s | Get-Partition | Get-Volume).UniqueId", diskID)
+	output, err := exec.Command("powershell", "/c", cmd).CombinedOutput()
+	if err != nil {
+		return []string{}, fmt.Errorf("error list volumes on disk. cmd: %s, output: %s, error: %v", cmd, string(output), err)
+	}
+
+	volumeIds := strings.Split(strings.TrimSpace(string(output)), "\r\n")
+	return volumeIds, nil
 }

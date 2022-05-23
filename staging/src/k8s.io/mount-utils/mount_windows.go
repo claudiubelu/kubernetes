@@ -263,14 +263,23 @@ func (mounter *SafeFormatAndMount) formatAndMountSensitive(source string, target
 	// Try to mount the disk
 	klog.V(4).Infof("Attempting to formatAndMount disk: %s %s %s", fstype, source, target)
 
-	if err := ValidateDiskNumber(source); err != nil {
-		klog.Errorf("diskMount: formatAndMount failed, err: %v", err)
-		return err
-	}
-
 	if len(fstype) == 0 {
 		// Use 'NTFS' as the default
 		fstype = "NTFS"
+	}
+
+	if err := ValidateDiskNumber(source); err != nil {
+		// Check if it's a local volume.
+		if _, e := os.Stat(source); e == nil {
+			// Mount the disk
+			klog.V(4).Infof("Attempting to mount disk %s in %s format at %s", source, fstype, target)
+			if err := mounter.MountSensitive(source, target, fstype, options, sensitiveOptions); err != nil {
+				return NewMountError(UnknownMountError, err.Error())
+			}
+			return nil
+		}
+		klog.Errorf("diskMount: formatAndMount failed, err: %v", err)
+		return err
 	}
 
 	// format disk if it is unformatted(raw)
@@ -286,13 +295,13 @@ func (mounter *SafeFormatAndMount) formatAndMountSensitive(source string, target
 		return err
 	}
 	driverPath := volumeIds[0]
-	target = NormalizeWindowsPath(target)
-	output, err := mounter.Exec.Command("cmd", "/c", "mklink", "/D", target, driverPath).CombinedOutput()
-	if err != nil {
-		klog.Errorf("mklink(%s, %s) failed: %v, output: %q", target, driverPath, err, string(output))
-		return err
+
+	// Mount the disk
+	klog.V(4).Infof("Attempting to mount disk %s in %s format at %s", driverPath, fstype, target)
+	if err := mounter.MountSensitive(driverPath, target, fstype, options, sensitiveOptions); err != nil {
+		return NewMountError(UnknownMountError, err.Error())
 	}
-	klog.V(2).Infof("formatAndMount disk(%s) fstype(%s) on(%s) with output(%s) successfully", driverPath, fstype, target, string(output))
+
 	return nil
 }
 
