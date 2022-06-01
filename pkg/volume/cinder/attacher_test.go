@@ -22,6 +22,7 @@ package cinder
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -89,7 +90,7 @@ func TestGetDeviceMountPath(t *testing.T) {
 	if err != nil {
 		t.Errorf("Get device mount path error")
 	}
-	expectedPath := rootDir + "plugins/kubernetes.io/cinder/mounts/" + name
+	expectedPath := filepath.Join(rootDir, "plugins/kubernetes.io/cinder/mounts/", name)
 	if path != expectedPath {
 		t.Errorf("Device mount path error: expected %s, got %s ", expectedPath, path)
 	}

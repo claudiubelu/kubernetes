@@ -22,6 +22,7 @@ package gcepd
 import (
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -96,8 +97,10 @@ func TestAttachDetachRegional(t *testing.T) {
 		test: func(testcase *testcase) error {
 			attacher := newAttacher(testcase)
 			devicePath, err := attacher.Attach(spec, nodeName)
-			if devicePath != "/dev/disk/by-id/google-disk" {
-				return fmt.Errorf("devicePath incorrect. Expected<\"/dev/disk/by-id/google-disk\"> Actual: <%q>", devicePath)
+			expectedDevicePath := "/dev/disk/by-id/google-disk"
+			expectedDevicePath = strings.Replace(expectedDevicePath, "/", string(os.PathSeparator), -1)
+			if devicePath != expectedDevicePath {
+				return fmt.Errorf("devicePath incorrect. Expected<\"%s\"> Actual: <%q>", expectedDevicePath, devicePath)
 			}
 			return err
 		},
@@ -127,8 +130,10 @@ func TestAttachDetach(t *testing.T) {
 			test: func(testcase *testcase) error {
 				attacher := newAttacher(testcase)
 				devicePath, err := attacher.Attach(spec, nodeName)
-				if devicePath != "/dev/disk/by-id/google-disk" {
-					return fmt.Errorf("devicePath incorrect. Expected<\"/dev/disk/by-id/google-disk\"> Actual: <%q>", devicePath)
+				expectedDevicePath := "/dev/disk/by-id/google-disk"
+				expectedDevicePath = strings.Replace(expectedDevicePath, "/", string(os.PathSeparator), -1)
+				if devicePath != expectedDevicePath {
+					return fmt.Errorf("devicePath incorrect. Expected<\"%s\"> Actual: <%q>", expectedDevicePath, devicePath)
 				}
 				return err
 			},
@@ -141,8 +146,10 @@ func TestAttachDetach(t *testing.T) {
 			test: func(testcase *testcase) error {
 				attacher := newAttacher(testcase)
 				devicePath, err := attacher.Attach(spec, nodeName)
-				if devicePath != "/dev/disk/by-id/google-disk" {
-					return fmt.Errorf("devicePath incorrect. Expected<\"/dev/disk/by-id/google-disk\"> Actual: <%q>", devicePath)
+				expectedDevicePath := "/dev/disk/by-id/google-disk"
+				expectedDevicePath = strings.Replace(expectedDevicePath, "/", string(os.PathSeparator), -1)
+				if devicePath != expectedDevicePath {
+					return fmt.Errorf("devicePath incorrect. Expected<\"%s\"> Actual: <%q>", expectedDevicePath, devicePath)
 				}
 				return err
 			},
@@ -156,8 +163,10 @@ func TestAttachDetach(t *testing.T) {
 			test: func(testcase *testcase) error {
 				attacher := newAttacher(testcase)
 				devicePath, err := attacher.Attach(spec, nodeName)
-				if devicePath != "/dev/disk/by-id/google-disk" {
-					return fmt.Errorf("devicePath incorrect. Expected<\"/dev/disk/by-id/google-disk\"> Actual: <%q>", devicePath)
+				expectedDevicePath := "/dev/disk/by-id/google-disk"
+				expectedDevicePath = strings.Replace(expectedDevicePath, "/", string(os.PathSeparator), -1)
+				if devicePath != expectedDevicePath {
+					return fmt.Errorf("devicePath incorrect. Expected<\"%s\"> Actual: <%q>", expectedDevicePath, devicePath)
 				}
 				return err
 			},

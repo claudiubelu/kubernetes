@@ -22,6 +22,9 @@ package vsphere_volume
 import (
 	"errors"
 	"fmt"
+	"os"
+	goruntime "runtime"
+	"strings"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -89,6 +92,10 @@ func TestAttachDetach(t *testing.T) {
 	diskName := "[local] volumes/test"
 	nodeName := types.NodeName("host")
 	spec := createVolSpec(diskName)
+	expectedDevice := "/dev/disk/by-id/wwn-0x" + uuid
+	if goruntime.GOOS == "windows" {
+		expectedDevice = strings.Replace(expectedDevice, "/", string(os.PathSeparator), -1)
+	}
 	attachError := errors.New("fake attach error")
 	detachError := errors.New("fake detach error")
 	diskCheckError := errors.New("fake DiskIsAttached error")
@@ -101,7 +108,7 @@ func TestAttachDetach(t *testing.T) {
 				attacher := newAttacher(testcase)
 				return attacher.Attach(spec, nodeName)
 			},
-			expectedDevice: "/dev/disk/by-id/wwn-0x" + uuid,
+			expectedDevice: expectedDevice,
 		},
 
 		// Attach call fails

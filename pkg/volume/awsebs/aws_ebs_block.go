@@ -66,6 +66,8 @@ func (plugin *awsElasticBlockStorePlugin) getVolumeSpecFromGlobalMapPath(volumeN
 	}
 	fullVolumeID := strings.TrimPrefix(globalMapPath, pluginDir) // /vol-XXXXXX
 	fullVolumeID = strings.TrimLeft(fullVolumeID, "/")           // vol-XXXXXX
+	// Windows paths have \\ instead.
+	fullVolumeID = strings.TrimLeft(fullVolumeID, "\\") // vol-XXXXXX
 	vID, err := formatVolumeID(fullVolumeID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get AWS volume id from map path %q: %v", globalMapPath, err)

@@ -17,6 +17,7 @@ limitations under the License.
 package volume_test
 
 import (
+	goruntime "runtime"
 	"testing"
 
 	. "k8s.io/kubernetes/pkg/volume"
@@ -24,6 +25,10 @@ import (
 )
 
 func TestGetMetricsBlockInvalid(t *testing.T) {
+	// TODO: Remove this once support VolumeMode=Block is added to Windows.
+	if goruntime.GOOS == "windows" {
+		t.Skip("Unsupported on Windows.")
+	}
 	metrics := NewMetricsBlock("")
 	actual, err := metrics.GetMetrics()
 	expected := &Metrics{}
