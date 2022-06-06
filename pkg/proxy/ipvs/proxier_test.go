@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	goruntime "runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -211,6 +212,9 @@ func makeTestEndpointSlice(namespace, name string, sliceNum int, epsFunc func(*d
 }
 
 func TestCleanupLeftovers(t *testing.T) {
+	if goruntime.GOOS == "windows" {
+		t.Skip("Skipping IPVS test on Windows (not supported).")
+	}
 	ipt := iptablestest.NewFake()
 	ipvs := ipvstest.NewFake()
 	ipset := ipsettest.NewFake(testIPSetVersion)
@@ -5729,6 +5733,9 @@ func Test_EndpointSliceOnlyReadyAndTerminatingLocalWithFeatureGateDisabled(t *te
 }
 
 func TestIpIsValidForSet(t *testing.T) {
+	if goruntime.GOOS == "windows" {
+		t.Skip("Skipping IPVS test on Windows (not supported).")
+	}
 	testCases := []struct {
 		isIPv6 bool
 		ip     string

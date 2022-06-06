@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -46,6 +47,11 @@ func TestDiskUsage(t *testing.T) {
 	if _, err = tmpfile2.WriteString("just for testing"); err != nil {
 		t.Fatalf("TestDiskUsage failed: %s", err.Error())
 	}
+
+	// File creation is not atomic. If we're calculating the DiskUsage too soon,
+	// we'd get zeroes for sizes, and fail with this error:
+	// TestDiskUsage failed: expected 0, got -1
+	time.Sleep(100 * time.Millisecond)
 
 	dirInfo1, err := os.Lstat(dir1)
 	if err != nil {

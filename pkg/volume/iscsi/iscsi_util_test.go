@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	goruntime "runtime"
 	"testing"
 
 	testingexec "k8s.io/utils/exec/testing"
@@ -361,6 +362,9 @@ func TestGetVolCount(t *testing.T) {
 	// +-- volumeDevices
 	//     +-- 192.168.0.2:3260-iqn.2003-01.io.k8s:e2e.volume-1-lun-4
 	//     +-- 192.168.0.3:3260-iqn.2003-01.io.k8s:e2e.volume-1-lun-5
+	if goruntime.GOOS == "windows" {
+		t.Skip("Not supported on Windows.")
+	}
 
 	baseDir, err := createFakePluginDirs()
 	if err != nil {

@@ -467,6 +467,11 @@ func TestValidateKubeProxyConfiguration(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
+		if runtime.GOOS == "windows" && testCase.config.Mode == kubeproxyconfig.ProxyModeIPVS {
+			// IPVS is not supported on Windows.
+			t.Log("Skipping test on Windows: ", name)
+			continue
+		}
 		t.Run(name, func(t *testing.T) {
 			errs := Validate(&testCase.config)
 			if len(testCase.expectedErrs) != len(errs) {
@@ -734,9 +739,11 @@ func TestValidateKubeProxyConntrackConfiguration(t *testing.T) {
 func TestValidateProxyMode(t *testing.T) {
 	newPath := field.NewPath("KubeProxyConfiguration")
 	successCases := []kubeproxyconfig.ProxyMode{""}
+	expectedNonExistentErrorMsg := "must be iptables,ipvs,userspace or blank (blank means the best-available proxy [currently iptables])"
 
 	if runtime.GOOS == "windows" {
 		successCases = append(successCases, kubeproxyconfig.ProxyModeKernelspace)
+		expectedNonExistentErrorMsg = "must be kernelspace,userspace or blank (blank means the most-available proxy [currently userspace])"
 	} else {
 		successCases = append(successCases, kubeproxyconfig.ProxyModeIPTables, kubeproxyconfig.ProxyModeIPVS)
 	}
@@ -761,7 +768,7 @@ func TestValidateProxyMode(t *testing.T) {
 		},
 		"invalid mode non-existent": {
 			mode:         kubeproxyconfig.ProxyMode("non-existing"),
-			expectedErrs: field.ErrorList{field.Invalid(newPath.Child("ProxyMode"), "non-existing", "must be iptables,ipvs,userspace or blank (blank means the best-available proxy [currently iptables])")},
+			expectedErrs: field.ErrorList{field.Invalid(newPath.Child("ProxyMode"), "non-existing", expectedNonExistentErrorMsg)},
 		},
 	}
 	for _, testCase := range testCases {

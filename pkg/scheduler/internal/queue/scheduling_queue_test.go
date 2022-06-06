@@ -1949,8 +1949,13 @@ func TestMoveAllToActiveOrBackoffQueue_PreEnqueueChecks(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			q := NewTestQueue(ctx, newDefaultQueueSort())
-			for _, podInfo := range tt.podInfos {
+			for i, podInfo := range tt.podInfos {
 				q.AddUnschedulableIfNotPresent(podInfo, q.schedulingCycle)
+				// NOTE: On Windows, time.Now() is not as precise, 2 consecutive calls may return the same timestamp,
+				// resulting in 0 time delta / latency. This will result the pods to be backed off in a random
+				// order, which would cause this test to fail, since the expectation is for them to be backed off
+				// in a certain order.
+				podInfo.Timestamp = podInfo.Timestamp.Add(time.Duration((i - len(tt.podInfos))) * time.Millisecond)
 			}
 			q.MoveAllToActiveOrBackoffQueue(TestEvent, tt.preEnqueueCheck)
 			var got []string

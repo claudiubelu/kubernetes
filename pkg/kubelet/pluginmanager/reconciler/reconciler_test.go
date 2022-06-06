@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -188,11 +189,14 @@ func Test_Run_Positive_Register(t *testing.T) {
 	stopChan := make(chan struct{})
 	defer close(stopChan)
 	go reconciler.Run(stopChan)
-	socketPath := fmt.Sprintf("%s/plugin.sock", socketDir)
+	socketPath := filepath.Join(socketDir, "plugin.sock")
 	pluginName := fmt.Sprintf("example-plugin")
 	p := pluginwatcher.NewTestExamplePlugin(pluginName, registerapi.DevicePlugin, socketPath, supportedVersions...)
 	require.NoError(t, p.Serve("v1beta1", "v1beta2"))
-	timestampBeforeRegistration := time.Now()
+	// On Windows, time.Now() is not as precise, which means that 2 consecutive calls may
+	// return the same timestamp. This would cause the test to fail, since they would have
+	// the same timestamp.
+	timestampBeforeRegistration := time.Now().Add(-time.Millisecond)
 	dsw.AddOrUpdatePlugin(socketPath)
 	waitForRegistration(t, socketPath, timestampBeforeRegistration, asw)
 
@@ -234,11 +238,14 @@ func Test_Run_Positive_RegisterThenUnregister(t *testing.T) {
 	defer close(stopChan)
 	go reconciler.Run(stopChan)
 
-	socketPath := fmt.Sprintf("%s/plugin.sock", socketDir)
+	socketPath := filepath.Join(socketDir, "plugin.sock")
 	pluginName := fmt.Sprintf("example-plugin")
 	p := pluginwatcher.NewTestExamplePlugin(pluginName, registerapi.DevicePlugin, socketPath, supportedVersions...)
 	require.NoError(t, p.Serve("v1beta1", "v1beta2"))
-	timestampBeforeRegistration := time.Now()
+	// On Windows, time.Now() is not as precise, which means that 2 consecutive calls may
+	// return the same timestamp. This would cause the test to fail, since they would have
+	// the same timestamp.
+	timestampBeforeRegistration := time.Now().Add(-time.Millisecond)
 	dsw.AddOrUpdatePlugin(socketPath)
 	waitForRegistration(t, socketPath, timestampBeforeRegistration, asw)
 
@@ -290,15 +297,18 @@ func Test_Run_Positive_ReRegister(t *testing.T) {
 	defer close(stopChan)
 	go reconciler.Run(stopChan)
 
-	socketPath := fmt.Sprintf("%s/plugin2.sock", socketDir)
+	socketPath := filepath.Join(socketDir, "plugin2.sock")
 	pluginName := fmt.Sprintf("example-plugin2")
 	p := pluginwatcher.NewTestExamplePlugin(pluginName, registerapi.DevicePlugin, socketPath, supportedVersions...)
 	require.NoError(t, p.Serve("v1beta1", "v1beta2"))
-	timestampBeforeRegistration := time.Now()
+	// On Windows, time.Now() is not as precise, which means that 2 consecutive calls may
+	// return the same timestamp. This would cause the test to fail, since they would have
+	// the same timestamp.
+	timestampBeforeRegistration := time.Now().Add(-time.Millisecond)
 	dsw.AddOrUpdatePlugin(socketPath)
 	waitForRegistration(t, socketPath, timestampBeforeRegistration, asw)
 
-	timeStampBeforeReRegistration := time.Now()
+	timeStampBeforeReRegistration := time.Now().Add(-time.Microsecond)
 	// Add the plugin again to update the timestamp
 	dsw.AddOrUpdatePlugin(socketPath)
 	// This should trigger a deregistration and a regitration

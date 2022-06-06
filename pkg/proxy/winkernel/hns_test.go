@@ -197,11 +197,11 @@ func testGetEndpointByIpAddressAndName(t *testing.T, hns HostNetworkService) {
 		t.Errorf("%v does not match %v", endpoint.ip, Endpoint.IpConfigurations[0].IpAddress)
 	}
 
-	endpoint, err = hns.getEndpointByName(Endpoint.Name)
+	endpoint2, err := hns.getEndpointByName(Endpoint.Name)
 	if err != nil {
 		t.Error(err)
 	}
-	diff := cmp.Diff(endpoint, Endpoint)
+	diff := cmp.Diff(endpoint, endpoint2)
 	if diff != "" {
 		t.Errorf("getEndpointByName(%s) returned a different endpoint. Diff: %s ", Endpoint.Name, diff)
 	}

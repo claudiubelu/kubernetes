@@ -17,6 +17,8 @@ limitations under the License.
 package winuserspace
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -77,6 +79,12 @@ func waitForClosedPortUDP(p *Proxier, proxyPort int) error {
 		if err != nil {
 			if e, ok := err.(net.Error); ok && !e.Timeout() {
 				return nil
+			}
+			// On Windows, DeadlineExceeded error can occur instead.
+			if e, ok := err.(*(net.OpError)); ok {
+				if errors.Is(e.Err, context.DeadlineExceeded); ok {
+					return nil
+				}
 			}
 		}
 		conn.Close()

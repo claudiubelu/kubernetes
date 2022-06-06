@@ -47,6 +47,9 @@ func createProductNameFile() (string, error) {
 // referenced by gceProductNameFile being removed, which is the opposite of
 // the other tests
 func TestMetadata(t *testing.T) {
+	if !onGCEVM() {
+		t.Skip("Skipping test, not on GCE.")
+	}
 	var err error
 	gceProductNameFile, err = createProductNameFile()
 	if err != nil {
