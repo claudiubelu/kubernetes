@@ -52,6 +52,40 @@ var (
 	}
 )
 
+func newFakeConfigurer(recorder record.EventRecorder, nodeRef *v1.ObjectReference, nodeIPs []net.IP, clusterDNS []net.IP, clusterDomain, resolverConfig string) *Configurer {
+	return &Configurer{
+		recorder:         recorder,
+		getHostDNSConfig: getResolvConfHostDNSConfig,
+		nodeRef:          nodeRef,
+		nodeIPs:          nodeIPs,
+		clusterDNS:       clusterDNS,
+		ClusterDomain:    clusterDomain,
+		ResolverConfig:   resolverConfig,
+	}
+}
+
+func getResolvConfHostDNSConfig(resolverConfig string) (*runtimeapi.DNSConfig, error) {
+	var hostDNS, hostSearch, hostOptions []string
+	// Get host DNS settings
+	if resolverConfig != "" {
+		f, err := os.Open(resolverConfig)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+
+		hostDNS, hostSearch, hostOptions, err = parseResolvConf(f)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &runtimeapi.DNSConfig{
+		Servers:  hostDNS,
+		Searches: hostSearch,
+		Options:  hostOptions,
+	}, nil
+}
+
 func TestParseResolvConf(t *testing.T) {
 	testCases := []struct {
 		data        string
@@ -608,7 +642,7 @@ func TestGetPodDNSCustom(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	configurer := NewConfigurer(recorder, nodeRef, nil, []net.IP{netutils.ParseIPSloppy(testClusterNameserver)}, testClusterDNSDomain, tmpfile.Name())
+	configurer := newFakeConfigurer(recorder, nodeRef, nil, []net.IP{netutils.ParseIPSloppy(testClusterNameserver)}, testClusterDNSDomain, tmpfile.Name())
 
 	testCases := []struct {
 		desc              string
