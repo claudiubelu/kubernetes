@@ -32,19 +32,6 @@ import (
 	pkgfeatures "k8s.io/kubernetes/pkg/features"
 )
 
-// getResourceList returns a ResourceList with the
-// specified cpu and memory resource values
-func getResourceList(cpu, memory string) v1.ResourceList {
-	res := v1.ResourceList{}
-	if cpu != "" {
-		res[v1.ResourceCPU] = resource.MustParse(cpu)
-	}
-	if memory != "" {
-		res[v1.ResourceMemory] = resource.MustParse(memory)
-	}
-	return res
-}
-
 // getResourceRequirements returns a ResourceRequirements object
 func getResourceRequirements(requests, limits v1.ResourceList) v1.ResourceRequirements {
 	res := v1.ResourceRequirements{}

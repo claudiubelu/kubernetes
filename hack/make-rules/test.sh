@@ -34,7 +34,7 @@ export KUBE_PANIC_WATCH_DECODE_ERROR
 kube::test::find_dirs() {
   (
     cd "${KUBE_ROOT}"
-    find -L . -not \( \
+    /bin/find -L . -not \( \
         \( \
           -path './_artifacts/*' \
           -o -path './_output/*' \
@@ -52,9 +52,9 @@ kube::test::find_dirs() {
           -o -path './staging/*' \
           -o -path './vendor/*' \
         \) -prune \
-      \) -name '*_test.go' -print0 | xargs -0n1 dirname | sed "s|^\./|${KUBE_GO_PACKAGE}/|" | LC_ALL=C sort -u
+      \) -name '*_test.go' -print0 | xargs -0n1 dirname | LC_ALL=C /bin/sort -u
 
-    find ./staging -name '*_test.go' -not -path '*/test/integration/*' -prune -print0 | xargs -0n1 dirname | sed 's|^\./staging/src/|./vendor/|' | LC_ALL=C sort -u
+    /bin/find ./staging -name '*_test.go' -not -path '*/test/integration/*' -prune -print0 | xargs -0n1 dirname | sed 's|^\./staging/src/|./vendor/|' | LC_ALL=C /bin/sort -u
   )
 }
 
@@ -257,12 +257,17 @@ runTests() {
 
   verifyPathsToPackagesUnderTest "$@"
 
+  all_tests="${@}"
+  if [[ "$(uname)" = "MSYS_NT-6.3" ]]; then
+    all_tests=$(printf "%s\n" "$@" | cut -d/ -f1-4 | /bin/sort -u | sed -e "s|.*|&/...|g" | xargs echo)
+  fi
+
   # If we're not collecting coverage, run all requested tests with one 'go test'
   # command, which is much faster.
   if [[ ! ${KUBE_COVER} =~ ^[yY]$ ]]; then
     kube::log::status "Running tests without code coverage ${KUBE_RACE:+"and with ${KUBE_RACE}"}"
     go test "${goflags[@]:+${goflags[@]}}" \
-     "${KUBE_TIMEOUT}" "${@}" \
+     "${KUBE_TIMEOUT}" ${all_tests} \
      "${testargs[@]:+${testargs[@]}}" \
      | tee ${junit_filename_prefix:+"${junit_filename_prefix}.stdout"} \
      | grep --binary-files=text "${go_test_grep_pattern}" && rc=$? || rc=$?
@@ -302,7 +307,7 @@ runTests() {
       echo -e "skipped\tk8s.io/kubernetes/${path}"
   done
 
-  printf "%s\n" "${@}" \
+  printf "%s\n" "${all_tests}" \
     | grep -Ev ${cover_ignore_dirs} \
     | xargs -I{} -n 1 -P "${KUBE_COVERPROCS}" \
     bash -c "set -o pipefail; _pkg=\"\$0\"; _pkg_out=\${_pkg//\//_}; \

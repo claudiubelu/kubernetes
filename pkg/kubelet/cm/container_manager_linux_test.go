@@ -177,6 +177,7 @@ func TestSoftRequirementsValidationSuccess(t *testing.T) {
 	assert.True(t, f.cpuHardcapping, "cpu hardcapping is expected to be enabled")
 }
 
+// port to Windows?
 func TestGetCapacity(t *testing.T) {
 	ephemeralStorageFromCapacity := int64(2000)
 	ephemeralStorageFromCadvisor := int64(8000)

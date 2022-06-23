@@ -21,9 +21,30 @@ package hostutil
 
 import (
 	"io/ioutil"
+	"path/filepath"
+	"net"
 	"os"
 	"testing"
 )
+
+func createSocketFile(socketDir string) (string, error) {
+	testSocketFile := filepath.Join(socketDir, "mt.sock")
+
+	// Switch to volume path and create the socket file
+	// socket file can not have length of more than 108 character
+	// and hence we must use relative path
+	oldDir, _ := os.Getwd()
+
+	err := os.Chdir(socketDir)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		os.Chdir(oldDir)
+	}()
+	_, socketCreateError := net.Listen("unix", "mt.sock")
+	return testSocketFile, socketCreateError
+}
 
 func TestGetFileType(t *testing.T) {
 	hu := NewHostUtil()
@@ -51,6 +72,18 @@ func TestGetFileType(t *testing.T) {
 				}
 				tempFile.Close()
 				return tempFile.Name(), tempFile.Name(), nil
+			},
+		},
+		{
+			"Socket Test",
+			FileTypeSocket,
+			func() (string, string, error) {
+				tempDir, err := ioutil.TempDir("", "test-get-filetype-")
+				if err != nil {
+					return "", "", err
+				}
+				tempSocketFile, err := createSocketFile(tempDir)
+				return tempSocketFile, tempDir, err
 			},
 		},
 	}

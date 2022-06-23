@@ -442,7 +442,7 @@ kube::golang::set_platform_envs() {
 
   # if CC is defined for platform then always enable it
   ccenv=$(echo "$platform" | awk -F/ '{print "KUBE_" toupper($1) "_" toupper($2) "_CC"}')
-  if [ -n "${!ccenv-}" ]; then 
+  if [ -n "${!ccenv-}" ]; then
     export CGO_ENABLED=1
     export CC="${!ccenv}"
   fi
@@ -466,7 +466,13 @@ kube::golang::create_gopath_tree() {
 
   # TODO: This symlink should be relative.
   if [[ ! -e "${go_pkg_dir}" || "$(readlink "${go_pkg_dir}")" != "${KUBE_ROOT}" ]]; then
-    ln -snf "${KUBE_ROOT}" "${go_pkg_dir}"
+    if [[ "$(uname)" = "MSYS_NT-6.3" ]]; then
+      go_pkg_dir=$(echo ${go_pkg_dir} | sed  "s|/|\\\|g" | sed -e "s|\\\c|C:|g")
+      kuberoot=$(echo ${KUBE_ROOT} | sed  "s|/|\\\|g" | sed -e "s|\\\c|C:|g")
+      powershell -Command "cmd /S /C mklink /D ${go_pkg_dir} ${kuberoot}"
+    else
+      ln -snf "${KUBE_ROOT}" "${go_pkg_dir}"
+    fi
   fi
 }
 
@@ -484,7 +490,7 @@ EOF
   IFS=" " read -ra go_version <<< "$(GOFLAGS='' go version)"
   local minimum_go_version
   minimum_go_version=go1.18.1
-  if [[ "${minimum_go_version}" != $(echo -e "${minimum_go_version}\n${go_version[2]}" | sort -s -t. -k 1,1 -k 2,2n -k 3,3n | head -n1) && "${go_version[2]}" != "devel" ]]; then
+  if [[ "${minimum_go_version}" != $(echo -e "${minimum_go_version}\n${go_version[2]}" | /bin/sort -s -t. -k 1,1 -k 2,2n -k 3,3n | head -n1) && "${go_version[2]}" != "devel" ]]; then
     kube::log::usage_from_stdin <<EOF
 Detected go version: ${go_version[*]}.
 Kubernetes requires ${minimum_go_version} or greater.

@@ -45,17 +45,19 @@ import (
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/pluginmanager/cache"
+	"k8s.io/kubernetes/pkg/kubelet/stats/pidlimit"
 	"k8s.io/kubernetes/pkg/kubelet/status"
 	schedulerframework "k8s.io/kubernetes/pkg/scheduler/framework"
 )
 
 type containerManagerImpl struct {
+	NodeConfig
 	// Capacity of this node.
 	capacity v1.ResourceList
+	// Capacity of this node, including internal resources.
+	internalCapacity v1.ResourceList
 	// Interface for cadvisor.
 	cadvisorInterface cadvisor.Interface
-	// Config of this node.
-	nodeConfig NodeConfig
 	// Interface for exporting and allocating devices reported by device plugins.
 	deviceManager devicemanager.Manager
 	// Interface for Topology resource co-ordination
@@ -104,9 +106,21 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 	}
 	capacity := cadvisor.CapacityFromMachineInfo(machineInfo)
 
+	var internalCapacity = v1.ResourceList{}
+	for k, v := range capacity {
+		internalCapacity[k] = v
+	}
+	pidlimits, err := pidlimit.Stats()
+	if err == nil && pidlimits != nil && pidlimits.MaxPID != nil {
+		internalCapacity[pidlimit.PIDs] = *resource.NewQuantity(
+			int64(*pidlimits.MaxPID),
+			resource.DecimalSI)
+	}
+
 	cm := &containerManagerImpl{
+		NodeConfig:        nodeConfig,
 		capacity:          capacity,
-		nodeConfig:        nodeConfig,
+		internalCapacity:  internalCapacity,
 		cadvisorInterface: cadvisorInterface,
 	}
 
@@ -131,7 +145,7 @@ func (cm *containerManagerImpl) SystemCgroupsLimit() v1.ResourceList {
 }
 
 func (cm *containerManagerImpl) GetNodeConfig() NodeConfig {
-	return NodeConfig{}
+	return cm.NodeConfig
 }
 
 func (cm *containerManagerImpl) GetMountedSubsystems() *CgroupSubsystems {
@@ -148,27 +162,6 @@ func (cm *containerManagerImpl) UpdateQOSCgroups() error {
 
 func (cm *containerManagerImpl) Status() Status {
 	return Status{}
-}
-
-func (cm *containerManagerImpl) GetNodeAllocatableReservation() v1.ResourceList {
-	evictionReservation := hardEvictionReservation(cm.nodeConfig.HardEvictionThresholds, cm.capacity)
-	result := make(v1.ResourceList)
-	for k := range cm.capacity {
-		value := resource.NewQuantity(0, resource.DecimalSI)
-		if cm.nodeConfig.SystemReserved != nil {
-			value.Add(cm.nodeConfig.SystemReserved[k])
-		}
-		if cm.nodeConfig.KubeReserved != nil {
-			value.Add(cm.nodeConfig.KubeReserved[k])
-		}
-		if evictionReservation != nil {
-			value.Add(evictionReservation[k])
-		}
-		if !value.IsZero() {
-			result[k] = *value
-		}
-	}
-	return result
 }
 
 func (cm *containerManagerImpl) GetCapacity() v1.ResourceList {
@@ -249,9 +242,5 @@ func (cm *containerManagerImpl) GetMemory(_, _ string) []*podresourcesapi.Contai
 }
 
 func (cm *containerManagerImpl) GetAllocatableMemory() []*podresourcesapi.ContainerMemory {
-	return nil
-}
-
-func (cm *containerManagerImpl) GetNodeAllocatableAbsolute() v1.ResourceList {
 	return nil
 }

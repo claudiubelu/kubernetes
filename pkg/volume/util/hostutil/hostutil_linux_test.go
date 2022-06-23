@@ -216,6 +216,7 @@ func createSocketFile(socketDir string) (string, error) {
 	return testSocketFile, socketCreateError
 }
 
+// Port to Windows?
 func TestGetFileType(t *testing.T) {
 	hu := NewHostUtil()
 

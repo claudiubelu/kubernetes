@@ -521,9 +521,9 @@ endef
 ifeq ($(PRINT_HELP),y)
 generated_files:
 	echo "$$GENERATED_FILES_HELP_INFO"
-else
-generated_files gen_openapi:
-	$(MAKE) -f Makefile.generated_files $@ CALLED_FROM_MAIN_MAKEFILE=1 SHELL="$(SHELL)"
+#else
+#generated_files gen_openapi:
+#	$(MAKE) -f Makefile.generated_files $@ CALLED_FROM_MAIN_MAKEFILE=1 SHELL="$(SHELL)"
 endif
 
 define HELP_INFO

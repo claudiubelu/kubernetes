@@ -1,6 +1,3 @@
-//go:build linux
-// +build linux
-
 /*
 Copyright 2017 The Kubernetes Authors.
 
@@ -27,6 +24,19 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	evictionapi "k8s.io/kubernetes/pkg/kubelet/eviction/api"
 )
+
+// getResourceList returns a ResourceList with the
+// specified cpu and memory resource values
+func getResourceList(cpu, memory string) v1.ResourceList {
+	res := v1.ResourceList{}
+	if cpu != "" {
+		res[v1.ResourceCPU] = resource.MustParse(cpu)
+	}
+	if memory != "" {
+		res[v1.ResourceMemory] = resource.MustParse(memory)
+	}
+	return res
+}
 
 func TestNodeAllocatableReservationForScheduling(t *testing.T) {
 	memoryEvictionThreshold := resource.MustParse("100Mi")

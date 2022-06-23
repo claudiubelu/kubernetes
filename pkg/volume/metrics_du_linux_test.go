@@ -1,8 +1,8 @@
-//go:build !linux && !windows
-// +build !linux,!windows
+//go:build linux
+// +build linux
 
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2022 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,18 +17,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package volume_test
 
 import (
-	"fmt"
-
-	"k8s.io/klog/v2"
+    "golang.org/x/sys/unix"
 )
 
-func (s *sourceFile) startWatch() {
-	klog.ErrorS(nil, "Watching source file is unsupported in this build")
-}
+func getExpectedBlockSize(path string) int64 {
+    statfs := &unix.Statfs_t{}
+    err := unix.Statfs(path, statfs)
+    if err != nil {
+        return 0
+    }
 
-func (s *sourceFile) consumeWatchEvent(e *watchEvent) error {
-	return fmt.Errorf("consuming watch event is unsupported in this build")
+    return int64(statfs.Bsize)
 }
