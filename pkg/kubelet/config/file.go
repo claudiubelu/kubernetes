@@ -24,11 +24,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"k8s.io/klog/v2"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/flowcontrol"
 	api "k8s.io/kubernetes/pkg/apis/core"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	utilio "k8s.io/utils/io"
@@ -42,6 +45,9 @@ const (
 	podDelete
 
 	eventBufferLen = 10
+
+	retryPeriod    = 1 * time.Second
+	maxRetryPeriod = 20 * time.Second
 )
 
 type watchEvent struct {
@@ -242,4 +248,117 @@ func (s *sourceFile) replaceStore(pods ...*v1.Pod) (err error) {
 		objs = append(objs, pod)
 	}
 	return s.store.Replace(objs, "")
+}
+
+type retryableError struct {
+	message string
+}
+
+func (e *retryableError) Error() string {
+	return e.message
+}
+
+func (s *sourceFile) startWatch() {
+	backOff := flowcontrol.NewBackOff(retryPeriod, maxRetryPeriod)
+	backOffID := "watch"
+
+	go wait.Forever(func() {
+		if backOff.IsInBackOffSinceUpdate(backOffID, time.Now()) {
+			return
+		}
+
+		if err := s.doWatch(); err != nil {
+			klog.ErrorS(err, "Unable to read config path", "path", s.path)
+			if _, retryable := err.(*retryableError); !retryable {
+				backOff.Next(backOffID, time.Now())
+			}
+		}
+	}, retryPeriod)
+}
+
+func (s *sourceFile) doWatch() error {
+	_, err := os.Stat(s.path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+		// Emit an update with an empty PodList to allow FileSource to be marked as seen
+		s.updates <- kubetypes.PodUpdate{Pods: []*v1.Pod{}, Op: kubetypes.SET, Source: kubetypes.FileSource}
+		return &retryableError{"path does not exist, ignoring"}
+	}
+
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("unable to create inotify: %v", err)
+	}
+	defer w.Close()
+
+	err = w.Add(s.path)
+	if err != nil {
+		return fmt.Errorf("unable to create inotify for path %q: %v", s.path, err)
+	}
+
+	for {
+		select {
+		case event := <-w.Events:
+			if err = s.produceWatchEvent(&event); err != nil {
+				return fmt.Errorf("error while processing inotify event (%+v): %v", event, err)
+			}
+		case err = <-w.Errors:
+			return fmt.Errorf("error while watching %q: %v", s.path, err)
+		}
+	}
+}
+
+func (s *sourceFile) produceWatchEvent(e *fsnotify.Event) error {
+	// Ignore file start with dots
+	if strings.HasPrefix(filepath.Base(e.Name), ".") {
+		klog.V(4).InfoS("Ignored pod manifest, because it starts with dots", "eventName", e.Name)
+		return nil
+	}
+	var eventType podEventType
+	switch {
+	case (e.Op & fsnotify.Create) > 0:
+		eventType = podAdd
+	case (e.Op & fsnotify.Write) > 0:
+		eventType = podModify
+	case (e.Op & fsnotify.Chmod) > 0:
+		eventType = podModify
+	case (e.Op & fsnotify.Remove) > 0:
+		eventType = podDelete
+	case (e.Op & fsnotify.Rename) > 0:
+		eventType = podDelete
+	default:
+		// Ignore rest events
+		return nil
+	}
+
+	s.watchEvents <- &watchEvent{e.Name, eventType}
+	return nil
+}
+
+func (s *sourceFile) consumeWatchEvent(e *watchEvent) error {
+	switch e.eventType {
+	case podAdd, podModify:
+		pod, err := s.extractFromFile(e.fileName)
+		if err != nil {
+			return fmt.Errorf("can't process config file %q: %v", e.fileName, err)
+		}
+		return s.store.Add(pod)
+	case podDelete:
+		if objKey, keyExist := s.fileKeyMapping[e.fileName]; keyExist {
+			pod, podExist, err := s.store.GetByKey(objKey)
+			if err != nil {
+				return err
+			} else if !podExist {
+				return fmt.Errorf("the pod with key %s doesn't exist in cache", objKey)
+			} else {
+				if err = s.store.Delete(pod); err != nil {
+					return fmt.Errorf("failed to remove deleted pod from cache: %v", err)
+				}
+				delete(s.fileKeyMapping, e.fileName)
+			}
+		}
+	}
+	return nil
 }
