@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/kubernetes/pkg/kubelet/pluginmanager/cache"
 )
 
@@ -46,7 +48,7 @@ func TestOperationExecutor_RegisterPlugin_ConcurrentRegisterPlugin(t *testing.T)
 	ch, quit, oe := setup()
 	for i := 0; i < numPluginsToRegister; i++ {
 		socketPath := fmt.Sprintf("%s/plugin-%d.sock", socketDir, i)
-		oe.RegisterPlugin(socketPath, time.Now(), nil /* plugin handlers */, nil /* actual state of the world updator */)
+		oe.RegisterPlugin(socketPath, uuid.NewUUID(), nil /* plugin handlers */, nil /* actual state of the world updator */)
 	}
 	if !isOperationRunConcurrently(ch, quit, numPluginsToRegister) {
 		t.Fatalf("Unable to start register operations in Concurrent for plugins")
@@ -57,7 +59,7 @@ func TestOperationExecutor_RegisterPlugin_SerialRegisterPlugin(t *testing.T) {
 	ch, quit, oe := setup()
 	socketPath := fmt.Sprintf("%s/plugin-serial.sock", socketDir)
 	for i := 0; i < numPluginsToRegister; i++ {
-		oe.RegisterPlugin(socketPath, time.Now(), nil /* plugin handlers */, nil /* actual state of the world updator */)
+		oe.RegisterPlugin(socketPath, uuid.NewUUID(), nil /* plugin handlers */, nil /* actual state of the world updator */)
 
 	}
 	if !isOperationRunSerially(ch, quit) {
@@ -105,7 +107,7 @@ func newFakeOperationGenerator(ch chan interface{}, quit chan interface{}) Opera
 
 func (fopg *fakeOperationGenerator) GenerateRegisterPluginFunc(
 	socketPath string,
-	timestamp time.Time,
+	UUID types.UID,
 	pluginHandlers map[string]cache.PluginHandler,
 	actualStateOfWorldUpdater ActualStateOfWorldUpdater) func() error {
 
