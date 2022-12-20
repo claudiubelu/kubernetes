@@ -19,7 +19,7 @@ package nodelifecycle
 import (
 	"context"
 	"fmt"
-	goruntime "runtime"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -2165,10 +2165,6 @@ func TestMonitorNodeHealthMarkPodsNotReadyRetry(t *testing.T) {
 // NodeController is just responsible for enqueuing the node to tainting queue from which taint manager picks up
 // and evicts the pods on the node.
 func TestApplyNoExecuteTaints(t *testing.T) {
-	// TODO: Remove skip once https://github.com/kubernetes/kubernetes/pull/114607 merges.
-	if goruntime.GOOS == "windows" {
-		t.Skip("Skipping test on Windows.")
-	}
 	fakeNow := metav1.Date(2017, 1, 1, 12, 0, 0, 0, time.UTC)
 
 	fakeNodeHandler := &testutil.FakeNodeHandler{
@@ -2280,6 +2276,12 @@ func TestApplyNoExecuteTaints(t *testing.T) {
 	}
 	nodeController.doNoExecuteTaintingPass(ctx)
 	node0, err := fakeNodeHandler.Get(ctx, "node0", metav1.GetOptions{})
+
+	// Remove the NoExecute taint rate limiter. If we don't do this, not all the
+	// nodes will be processed and tainted appropriately when doing the NoExecute taint pass.
+	for k := range nodeController.zoneNoExecuteTainter {
+		nodeController.zoneNoExecuteTainter[k].SwapLimiter(math.MaxFloat32)
+	}
 	if err != nil {
 		t.Errorf("Can't get current node0...")
 		return
@@ -2531,12 +2533,18 @@ func TestApplyNoExecuteTaintsToNodesEnqueueTwice(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 
-	// 4. do NoExecute taint pass
+	// 4. Remove the NoExecute taint rate limiter. If we don't do this, not all the
+	// nodes will be processed and tainted appropriately when doing the NoExecute taint pass.
+	for k := range nodeController.zoneNoExecuteTainter {
+		nodeController.zoneNoExecuteTainter[k].SwapLimiter(math.MaxFloat32)
+	}
+
+	// 5. do NoExecute taint pass
 	// when processing with node0, condition.Status is NodeReady, and return true with default case
 	// then remove the set value and queue value both, the taint job never stuck
 	nodeController.doNoExecuteTaintingPass(ctx)
 
-	// 5. get node3 and node5, see if it has ready got NoExecute taint
+	// 6. get node3 and node5, see if it has ready got NoExecute taint
 	node3, err := fakeNodeHandler.Get(ctx, "node3", metav1.GetOptions{})
 	if err != nil {
 		t.Errorf("Can't get current node3...")
@@ -2654,6 +2662,12 @@ func TestSwapUnreachableNotReadyTaints(t *testing.T) {
 	}
 	if err := nodeController.monitorNodeHealth(ctx); err != nil {
 		t.Errorf("unexpected error: %v", err)
+	}
+
+	// Remove the NoExecute taint rate limiter. If we don't do this, not all the
+	// nodes will be processed and tainted appropriately when doing the NoExecute taint pass.
+	for k := range nodeController.zoneNoExecuteTainter {
+		nodeController.zoneNoExecuteTainter[k].SwapLimiter(math.MaxFloat32)
 	}
 	nodeController.doNoExecuteTaintingPass(ctx)
 
